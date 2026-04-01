@@ -107,12 +107,20 @@ DISTRO=$(detect_distro)
 
 case "$DISTRO" in
 arch | manjaro | endeavouros)
-	install_arch
-	run_app
+	if install_arch; then
+		run_app
+	else
+		echo "Failed to install dependencies. Exiting."
+		exit 1
+	fi
 	;;
 fedora)
-	install_fedora
-	run_app
+	if install_fedora; then
+		run_app
+	else
+		echo "Failed to install dependencies. Exiting."
+		exit 1
+	fi
 	;;
 nixos)
 	run_nixos
