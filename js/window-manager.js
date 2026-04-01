@@ -54,9 +54,21 @@ const XPWindowManager = {
         <img class="window-icon" src="${icon}" alt="${title}" />
         <span class="window-title">${title}</span>
         <div class="window-buttons">
-          ${minimizable ? `<button class="window-btn minimize" data-action="minimize" title="Minimize"></button>` : ''}
-          ${maximizable && resizable ? `<button class="window-btn maximize" data-action="maximize" title="Maximize"></button>` : ''}
-          ${closable ? `<button class="window-btn close" data-action="close" title="Close"></button>` : ''}
+          ${
+            minimizable
+              ? `<button class="window-btn minimize" data-action="minimize" title="Minimize"></button>`
+              : ''
+          }
+      ${
+        maximizable && resizable
+          ? `<button class="window-btn maximize" data-action="maximize" title="Maximize"></button>`
+          : ''
+      }
+          ${
+            closable
+              ? `<button class="window-btn close" data-action="close" title="Close"></button>`
+              : ''
+          }
         </div>
       </div>
       <div class="window-content">${content}</div>
@@ -99,15 +111,13 @@ const XPWindowManager = {
     this.windows.push(winData);
     this.focusWindow(id);
 
-    windowEl
-      .querySelector('.window-header')
-      .addEventListener('dblclick', (e) => {
-        if (e.target.classList.contains('window-btn')) return;
-        if (resizable && maximizable) this.toggleMaximize(id);
-      });
+    windowEl.querySelector('.window-header').addEventListener('dblclick', e => {
+      if (e.target.classList.contains('window-btn')) return;
+      if (resizable && maximizable) this.toggleMaximize(id);
+    });
 
-    windowEl.querySelectorAll('.window-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+    windowEl.querySelectorAll('.window-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
         e.stopPropagation();
         const action = btn.dataset.action;
         this.handleWindowAction(id, action);
@@ -120,7 +130,7 @@ const XPWindowManager = {
   },
 
   handleWindowAction(id, action) {
-    const win = this.windows.find((w) => w.id === id);
+    const win = this.windows.find(w => w.id === id);
     if (!win) return;
 
     switch (action) {
@@ -140,7 +150,7 @@ const XPWindowManager = {
   },
 
   focusWindow(id) {
-    const win = this.windows.find((w) => w.id === id);
+    const win = this.windows.find(w => w.id === id);
     if (!win || win.minimized) return;
 
     win.zIndex = this.nextZIndex++;
@@ -148,7 +158,7 @@ const XPWindowManager = {
     win.element.classList.add('focused');
     win.element.classList.remove('unfocused');
 
-    this.windows.forEach((w) => {
+    this.windows.forEach(w => {
       if (w.id !== id && !w.minimized) {
         w.element.classList.remove('focused');
         w.element.classList.add('unfocused');
@@ -160,7 +170,7 @@ const XPWindowManager = {
   },
 
   closeWindow(id) {
-    const winIndex = this.windows.findIndex((w) => w.id === id);
+    const winIndex = this.windows.findIndex(w => w.id === id);
     if (winIndex === -1) return;
 
     const win = this.windows[winIndex];
@@ -169,7 +179,7 @@ const XPWindowManager = {
 
     if (this.focusedWindowId === id) {
       const topWin = this.windows
-        .filter((w) => !w.minimized)
+        .filter(w => !w.minimized)
         .sort((a, b) => b.zIndex - a.zIndex)[0];
       if (topWin) {
         this.focusWindow(topWin.id);
@@ -182,14 +192,14 @@ const XPWindowManager = {
   },
 
   minimizeWindow(id) {
-    const win = this.windows.find((w) => w.id === id);
+    const win = this.windows.find(w => w.id === id);
     if (!win) return;
 
     win.minimized = true;
     win.element.style.display = 'none';
 
     const topWin = this.windows
-      .filter((w) => !w.minimized)
+      .filter(w => !w.minimized)
       .sort((a, b) => b.zIndex - a.zIndex)[0];
     if (topWin) {
       this.focusWindow(topWin.id);
@@ -201,7 +211,7 @@ const XPWindowManager = {
   },
 
   restoreWindow(id) {
-    const win = this.windows.find((w) => w.id === id);
+    const win = this.windows.find(w => w.id === id);
     if (!win) return;
 
     win.minimized = false;
@@ -210,7 +220,7 @@ const XPWindowManager = {
   },
 
   toggleMaximize(id) {
-    const win = this.windows.find((w) => w.id === id);
+    const win = this.windows.find(w => w.id === id);
     if (!win || !win.resizable) return;
 
     if (win.maximized) {
@@ -220,6 +230,12 @@ const XPWindowManager = {
       win.element.style.width = win.originalWidth + 'px';
       win.element.style.height = win.originalHeight + 'px';
       win.element.style.resize = 'both';
+      win.element.classList.remove('maximized');
+      const maximizeButton = win.element.querySelector('.window-btn.maximize');
+      if (maximizeButton) {
+        maximizeButton.classList.remove('active');
+        maximizeButton.title = 'Maximize';
+      }
 
       win.x = win.originalX;
       win.y = win.originalY;
@@ -236,6 +252,12 @@ const XPWindowManager = {
       win.element.style.width = window.innerWidth + 6 + 'px';
       win.element.style.height = window.innerHeight - 24 + 'px';
       win.element.style.resize = 'none';
+      win.element.classList.add('maximized');
+      const maximizeButton = win.element.querySelector('.window-btn.maximize');
+      if (maximizeButton) {
+        maximizeButton.classList.add('active');
+        maximizeButton.title = 'Restore';
+      }
 
       win.x = -3;
       win.y = -3;
@@ -254,7 +276,7 @@ const XPWindowManager = {
     const id = parseInt(
       windowEl.dataset.windowId || windowEl.id.replace('window-', ''),
     );
-    const win = this.windows.find((w) => w.id === id);
+    const win = this.windows.find(w => w.id === id);
     if (!win || win.minimized) return;
 
     this.focusWindow(id);
@@ -274,7 +296,7 @@ const XPWindowManager = {
     if (!this.dragState) return;
     e.preventDefault();
 
-    const win = this.windows.find((w) => w.id === this.dragState.id);
+    const win = this.windows.find(w => w.id === this.dragState.id);
     if (!win || win.maximized) return;
 
     win.x = e.clientX - this.dragState.offsetX;
@@ -287,7 +309,7 @@ const XPWindowManager = {
   handleMouseUp() {
     if (this.focusedWindowId !== null) {
       const focusedWindow = this.windows.find(
-        (win) => win.id === this.focusedWindowId,
+        win => win.id === this.focusedWindowId,
       );
 
       if (
@@ -322,7 +344,7 @@ const XPWindowManager = {
 
     if (isDesktop && !isIcon && !isTaskbar && !isStartMenu) {
       this.focusedWindowId = null;
-      this.windows.forEach((w) => {
+      this.windows.forEach(w => {
         w.element.classList.remove('focused');
         w.element.classList.add('unfocused');
       });
@@ -335,11 +357,13 @@ const XPWindowManager = {
 
     taskbarApps.innerHTML = '';
 
-    this.windows.forEach((win) => {
+    this.windows.forEach(win => {
       if (!win.showInTaskbar) return;
 
       const btn = document.createElement('div');
-      btn.className = `taskbar-app ${this.focusedWindowId === win.id ? 'focused' : ''}`;
+      btn.className = `taskbar-app ${
+        this.focusedWindowId === win.id ? 'focused' : ''
+      }`;
       btn.innerHTML = `
         <img src="${win.icon}" alt="${win.title}" />
         <span>${win.title}</span>
