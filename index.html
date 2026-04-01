@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Windows XP</title>
+    <link rel="stylesheet" href="assets/font.css" />
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
+  <body>
+    <div class="xp-desktop">
+      <div class="xp-icons" id="desktop-icons"></div>
+      <div class="xp-start-menu" id="start-menu" style="display: none">
+        <header>
+          <img
+            class="header-img"
+            src="assets/windowsIcons/user.png"
+            alt="User"
+          />
+          <span class="header-text">User</span>
+        </header>
+        <section class="menu">
+          <div class="menu-left">
+            <div class="menu-item strong-item" data-app="internet">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/ie.png"
+                alt=""
+              />
+              <div class="menu-item-text">
+                <div>Internet</div>
+                <div class="menu-item-subtext">Internet Explorer</div>
+              </div>
+            </div>
+            <div class="menu-item strong-item" data-app="email">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/887(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">
+                <div>E-mail</div>
+                <div class="menu-item-subtext">Outlook Express</div>
+              </div>
+            </div>
+            <div class="menu-separator"></div>
+            <div class="menu-item" data-app="minesweeper">
+              <img
+                class="menu-item-img"
+                src="assets/minesweeper/mine-icon.png"
+                alt=""
+              />
+              <div class="menu-item-text">Minesweeper</div>
+            </div>
+            <div class="menu-item" data-app="notepad">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/327(16x16).png"
+                alt=""
+              />
+              <div class="menu-item-text">Notepad</div>
+            </div>
+            <div class="menu-item" data-app="winamp">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/winamp.png"
+                alt=""
+              />
+              <div class="menu-item-text">Winamp</div>
+            </div>
+            <div class="menu-item" data-app="paint">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/680(16x16).png"
+                alt=""
+              />
+              <div class="menu-item-text">Paint</div>
+            </div>
+            <div class="menu-item" data-app="mediaplayer">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/846(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">Windows Media Player</div>
+            </div>
+            <div class="menu-item" data-app="messenger">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/msn.png"
+                alt=""
+              />
+              <div class="menu-item-text">Windows Messenger</div>
+            </div>
+            <div class="menu-spacer"></div>
+            <div class="menu-separator"></div>
+            <div class="menu-item strong-item" data-app="allprograms">
+              <img class="menu-item-img" src="assets/empty.png" alt="" />
+              <div class="menu-item-text">
+                <div>All Programs</div>
+                <div class="menu-arrow"></div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-right">
+            <div class="menu-item strong-item" data-app="mydocs">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/308(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">My Documents</div>
+            </div>
+            <div class="menu-item strong-item" data-app="myrecent">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/301(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">
+                <div>My Recent Documents</div>
+                <div class="menu-arrow"></div>
+              </div>
+            </div>
+            <div class="menu-item strong-item" data-app="mypictures">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/307(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">My Pictures</div>
+            </div>
+            <div class="menu-item strong-item" data-app="mymusic">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/550(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">My Music</div>
+            </div>
+            <div class="menu-item strong-item" data-app="mycomputer">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/676(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">My Computer</div>
+            </div>
+            <div class="menu-separator"></div>
+            <div class="menu-item" data-app="controlpanel">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/300(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">Control Panel</div>
+            </div>
+            <div class="menu-item" data-app="setprogramaccess">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/227(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">Set Program Access and Defaults</div>
+            </div>
+            <div class="menu-item" data-app="connectto">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/309(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">
+                <div>Connect To</div>
+                <div class="menu-arrow"></div>
+              </div>
+            </div>
+            <div class="menu-item" data-app="printers">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/549(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">Printers and Faxes</div>
+            </div>
+            <div class="menu-separator"></div>
+            <div class="menu-item" data-app="help">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/747(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">Help and Support</div>
+            </div>
+            <div class="menu-item" data-app="search">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/299(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">Search</div>
+            </div>
+            <div class="menu-item" data-app="run">
+              <img
+                class="menu-item-img"
+                src="assets/windowsIcons/743(32x32).png"
+                alt=""
+              />
+              <div class="menu-item-text">Run...</div>
+            </div>
+          </div>
+        </section>
+        <footer>
+          <div class="footer-item" data-action="logoff">
+            <img src="assets/windowsIcons/546(32x32).png" alt="" />
+            <span>Log Off</span>
+          </div>
+          <div class="footer-item" data-action="shutdown">
+            <img src="assets/windowsIcons/310(32x32).png" alt="" />
+            <span>Turn Off Computer</span>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <div class="xp-taskbar">
+      <div class="taskbar-left">
+        <div class="start-button" id="start-button">
+          <img src="assets/windowsIcons/start.png" alt="Start" />
+        </div>
+        <div class="taskbar-apps" id="taskbar-apps"></div>
+      </div>
+      <div class="taskbar-right">
+        <div class="tray-icons">
+          <img src="assets/windowsIcons/690(16x16).png" alt="Volume" />
+          <img src="assets/windowsIcons/394(16x16).png" alt="Network" />
+          <img
+            src="assets/windowsIcons/229(16x16).png"
+            alt="Security"
+            id="security-tray-icon"
+          />
+          <div class="tray-balloon-anchor">
+            <div class="tray-balloon" id="tray-balloon">
+              <div class="tray-balloon-container">
+                <button
+                  class="tray-balloon-close"
+                  id="tray-balloon-close"
+                ></button>
+                <div class="tray-balloon-header">
+                  <img src="assets/windowsIcons/229(16x16).png" alt="risk" />
+                  <span>Your computer might be at risk</span>
+                </div>
+                <p class="tray-balloon-text-first">
+                  Antivirus software might not be installed
+                </p>
+                <p>Click this balloon to fix this problem.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="clock" id="clock">12:00 PM</div>
+      </div>
+    </div>
+
+    <script src="js/window-manager.js"></script>
+    <script src="js/apps.js"></script>
+    <script>
+      const desktopIcons = [
+        {
+          id: 'ie',
+          title: 'Internet Explorer',
+          icon: 'assets/windowsIcons/ie.png',
+          app: 'ie',
+        },
+        {
+          id: 'minesweeper',
+          title: 'Minesweeper',
+          icon: 'assets/minesweeper/mine-icon.png',
+          app: 'minesweeper',
+        },
+        {
+          id: 'mycomputer',
+          title: 'My Computer',
+          icon: 'assets/windowsIcons/676(32x32).png',
+          app: 'mycomputer',
+        },
+        {
+          id: 'notepad',
+          title: 'Notepad',
+          icon: 'assets/windowsIcons/327(32x32).png',
+          app: 'notepad',
+        },
+        {
+          id: 'winamp',
+          title: 'Winamp',
+          icon: 'assets/windowsIcons/winamp.png',
+          app: 'winamp',
+        },
+        {
+          id: 'paint',
+          title: 'Paint',
+          icon: 'assets/windowsIcons/680(32x32).png',
+          app: 'paint',
+        },
+      ];
+
+      let selectedIcon = null;
+
+      function initDesktop() {
+        const iconsContainer = document.getElementById('desktop-icons');
+        desktopIcons.forEach((icon, index) => {
+          const el = document.createElement('div');
+          el.className = 'xp-icon';
+          el.dataset.app = icon.app;
+          el.innerHTML = `
+          <div class="xp-icon-img">
+            <img src="${icon.icon}" alt="${icon.title}" />
+            <img
+              src="assets/windowsIcons/w2k_shortcut_overlay.ico"
+              alt=""
+              class="xp-icon-shortcut-overlay"
+            />
+          </div>
+          <div class="xp-icon-text">${icon.title}</div>
+        `;
+          el.style.top = 2 + index * 90 + 'px';
+
+          el.addEventListener('click', e => {
+            e.stopPropagation();
+            document
+              .querySelectorAll('.xp-icon')
+              .forEach(i => i.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedIcon = icon.app;
+          });
+
+          el.addEventListener('dblclick', () => {
+            window.XPApps.open(icon.app);
+          });
+
+          iconsContainer.appendChild(el);
+        });
+
+        document.querySelector('.xp-desktop').addEventListener('click', e => {
+          if (e.target.classList.contains('xp-desktop')) {
+            document
+              .querySelectorAll('.xp-icon')
+              .forEach(i => i.classList.remove('selected'));
+            selectedIcon = null;
+          }
+        });
+      }
+
+      function initStartMenu() {
+        const startButton = document.getElementById('start-button');
+        const startMenu = document.getElementById('start-menu');
+
+        startButton.addEventListener('click', e => {
+          e.stopPropagation();
+          const isVisible =
+            window.getComputedStyle(startMenu).display !== 'none';
+          startMenu.style.display = isVisible ? 'none' : 'flex';
+        });
+
+        startMenu.querySelectorAll('.menu-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const app = item.dataset.app;
+            if (app) {
+              window.XPApps.open(app);
+              startMenu.style.display = 'none';
+            }
+          });
+        });
+
+        startMenu.querySelectorAll('.footer-item').forEach(item => {
+          item.addEventListener('click', () => {
+            alert(
+              item.dataset.action === 'shutdown'
+                ? 'Shutting down...'
+                : 'Logging off...',
+            );
+            startMenu.style.display = 'none';
+          });
+        });
+
+        document.addEventListener('click', e => {
+          if (
+            !startButton.contains(e.target) &&
+            !startMenu.contains(e.target)
+          ) {
+            startMenu.style.display = 'none';
+          }
+        });
+      }
+
+      function initClock() {
+        function updateClock() {
+          const now = new Date();
+          let hour = now.getHours();
+          let ampm = 'AM';
+          if (hour >= 12) {
+            hour -= 12;
+            ampm = 'PM';
+          }
+          if (hour === 0) hour = 12;
+          const min = now
+            .getMinutes()
+            .toString()
+            .padStart(2, '0');
+          document.getElementById(
+            'clock',
+          ).textContent = `${hour}:${min} ${ampm}`;
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+      }
+
+      function initTrayBalloon() {
+        const balloon = document.getElementById('tray-balloon');
+        const closeBtn = document.getElementById('tray-balloon-close');
+        if (!balloon || !closeBtn) return;
+
+        let shown = false;
+        let removed = false;
+        let hovering = false;
+        let showTimer = null;
+        let fadeTimer = null;
+        let hideTimer = null;
+
+        function clearFadeTimers() {
+          if (fadeTimer) clearTimeout(fadeTimer);
+          if (hideTimer) clearTimeout(hideTimer);
+          fadeTimer = null;
+          hideTimer = null;
+        }
+
+        function startFadeOutCountdown() {
+          if (removed || !shown || hovering) return;
+          clearFadeTimers();
+
+          fadeTimer = setTimeout(() => {
+            balloon.classList.remove('fading-in');
+            balloon.classList.add('fading-out');
+            hideTimer = setTimeout(() => {
+              balloon.style.display = 'none';
+              balloon.classList.remove('fading-out');
+              shown = false;
+            }, 1000);
+          }, 15000);
+        }
+
+        showTimer = setTimeout(() => {
+          if (removed) return;
+
+          clearFadeTimers();
+          balloon.style.opacity = '0';
+          balloon.classList.remove('fading-out');
+          balloon.classList.add('fading-in');
+          balloon.style.display = 'block';
+
+          shown = true;
+          startFadeOutCountdown();
+        }, 3000);
+
+        balloon.addEventListener('mouseenter', () => {
+          hovering = true;
+          clearFadeTimers();
+          balloon.classList.remove('fading-out');
+        });
+
+        balloon.addEventListener('mouseleave', () => {
+          hovering = false;
+          startFadeOutCountdown();
+        });
+
+        balloon.addEventListener('animationend', event => {
+          if (event.animationName === 'tray-balloon-fadein') {
+            balloon.classList.remove('fading-in');
+            balloon.style.opacity = '1';
+          }
+        });
+
+        closeBtn.addEventListener('click', () => {
+          removed = true;
+          shown = false;
+          hovering = false;
+          if (showTimer) clearTimeout(showTimer);
+          clearFadeTimers();
+          balloon.classList.remove('fading-in');
+          balloon.classList.remove('fading-out');
+          balloon.style.display = 'none';
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        XPWindowManager.init();
+        initDesktop();
+        initStartMenu();
+        initClock();
+        initTrayBalloon();
+        XPApps.init();
+      });
+    </script>
+  </body>
+</html>
