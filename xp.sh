@@ -110,16 +110,26 @@ arch | manjaro | endeavouros)
 	if install_arch; then
 		run_app
 	else
-		echo "Failed to install dependencies. Exiting."
-		exit 1
+		status=$?
+		if [ "$status" -eq 130 ]; then
+			echo "Dependency installation cancelled by user. Exiting."
+		else
+			echo "Failed to install dependencies. Exiting."
+		fi
+		exit "$status"
 	fi
 	;;
 fedora)
 	if install_fedora; then
 		run_app
 	else
-		echo "Failed to install dependencies. Exiting."
-		exit 1
+		status=$?
+		if [ "$status" -eq 130 ]; then
+			echo "Dependency installation cancelled by user. Exiting."
+		else
+			echo "Failed to install dependencies. Exiting."
+		fi
+		exit "$status"
 	fi
 	;;
 nixos)
