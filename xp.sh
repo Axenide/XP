@@ -82,7 +82,7 @@ EOF
 
 run_nixos() {
 	echo "→ Running in temporary Nix shell..."
-	nix-shell -p gtk3 webkitgtk python3 python3Packages.pygobject3 gst_all_1.gstreamer gst_all_1.gst-plugins-base gst_all_1.gst-plugins-good --run "
+	nix-shell -p gtk3 webkitgtk_4_0 python3 python3Packages.pygobject3 gst_all_1.gstreamer gst_all_1.gst-plugins-base gst_all_1.gst-plugins-good --run "
     export WEBKIT_DISABLE_COMPOSITING_MODE=1
     python3 - <<'EOF'
 import os
@@ -114,7 +114,7 @@ EOF
 DISTRO=$(detect_distro)
 
 case "$DISTRO" in
-arch | manjaro | endeavouros)
+arch | manjaro | endeavour | cachyos | garuda | endeavourouros)
 	if install_arch; then
 		run_app
 	else
