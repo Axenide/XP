@@ -25,7 +25,11 @@ install_arch() {
 		return 0
 	fi
 
-	sudo pacman -S --needed $missing
+	if [ -t 0 ]; then
+		sudo pacman -S --needed $missing
+	else
+		sudo pacman -S --needed $missing </dev/tty
+	fi
 }
 
 install_fedora() {
@@ -42,7 +46,11 @@ install_fedora() {
 		return 0
 	fi
 
-	sudo dnf install -y $missing
+	if [ -t 0 ]; then
+		sudo dnf install -y $missing
+	else
+		sudo dnf install -y $missing </dev/tty
+	fi
 }
 
 run_app() {
