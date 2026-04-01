@@ -14,7 +14,7 @@ detect_distro() {
 install_arch() {
 	echo "→ Installing dependencies on Arch Linux..."
 	missing=""
-	for pkg in gtk3 webkit2gtk python-gobject; do
+	for pkg in gtk3 webkit2gtk python-gobject gst-plugins-base gst-plugins-good gstreamer; do
 		if ! pacman -Q "$pkg" >/dev/null 2>&1; then
 			missing="$missing $pkg"
 		fi
@@ -31,7 +31,7 @@ install_arch() {
 install_fedora() {
 	echo "→ Installing dependencies on Fedora..."
 	missing=""
-	for pkg in gtk3 webkit2gtk3 python3-gobject; do
+	for pkg in gtk3 webkit2gtk3 python3-gobject gstreamer1 gstreamer1-plugins-base gstreamer1-plugins-good; do
 		if ! rpm -q "$pkg" >/dev/null 2>&1; then
 			missing="$missing $pkg"
 		fi
@@ -74,7 +74,7 @@ EOF
 
 run_nixos() {
 	echo "→ Running in temporary Nix shell..."
-	nix-shell -p gtk3 webkitgtk python3 python3Packages.pygobject3 --run "
+	nix-shell -p gtk3 webkitgtk python3 python3Packages.pygobject3 gst_all_1.gstreamer gst_all_1.gst-plugins-base gst_all_1.gst-plugins-good --run "
     export WEBKIT_DISABLE_COMPOSITING_MODE=1
     python3 - <<'EOF'
 import os
