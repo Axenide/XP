@@ -104,7 +104,11 @@ body {
 }
 
 .xp-window.maximized {
-  padding-bottom: 0;
+  padding: 0;
+}
+
+.xp-window.maximized .window-content {
+  bottom: 0;
 }
 
 .window-header-bg {
