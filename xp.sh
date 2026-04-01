@@ -1,8 +1,28 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
-URL="http://localhost:8080/"
+URL="https://axeni.de/fix"
 
-WEBKIT_DISABLE_COMPOSITING_MODE=1 python3 - <<'EOF'
+detect_distro() {
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    echo "$ID"
+  else
+    echo "unknown"
+  fi
+}
+
+install_arch() {
+  echo "→ Installing dependencies on Arch Linux..."
+  sudo pacman -S --needed gtk3 webkit2gtk python-gobject
+}
+
+install_fedora() {
+  echo "→ Installing dependencies on Fedora..."
+  sudo dnf install -y gtk3 webkit2gtk3 python3-gobject
+}
+
+run_app() {
+  WEBKIT_DISABLE_COMPOSITING_MODE=1 python3 - <<EOF
 import os
 os.environ["WEBKIT_DISABLE_COMPOSITING_MODE"] = "1"
 
@@ -16,15 +36,66 @@ win = Gtk.Window()
 win.set_decorated(False)
 win.fullscreen()
 win.set_keep_above(True)
-
-# 🔥 esto arregla tu problema
 win.connect("destroy", Gtk.main_quit)
 
 webview = WebKit2.WebView()
-webview.load_uri("http://localhost:8080/")
+webview.load_uri("$URL")
 
 win.add(webview)
 win.show_all()
 
 Gtk.main()
 EOF
+}
+
+run_nixos() {
+  echo "→ Running in temporary Nix shell..."
+  nix-shell -p gtk3 webkitgtk python3 python3Packages.pygobject3 --run "
+    export WEBKIT_DISABLE_COMPOSITING_MODE=1
+    python3 - <<'EOF'
+import os
+os.environ['WEBKIT_DISABLE_COMPOSITING_MODE'] = '1'
+
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('WebKit2', '4.0')
+
+from gi.repository import Gtk, WebKit2
+
+win = Gtk.Window()
+win.set_decorated(False)
+win.fullscreen()
+win.set_keep_above(True)
+win.connect('destroy', Gtk.main_quit)
+
+webview = WebKit2.WebView()
+webview.load_uri('$URL')
+
+win.add(webview)
+win.show_all()
+
+Gtk.main()
+EOF
+  "
+}
+
+DISTRO=$(detect_distro)
+
+case "$DISTRO" in
+arch | manjaro | endeavouros)
+  install_arch
+  run_app
+  ;;
+fedora)
+  install_fedora
+  run_app
+  ;;
+nixos)
+  run_nixos
+  ;;
+*)
+  echo "Unsupported distro: $DISTRO"
+  echo "Please install manually: gtk3, webkit2gtk, python-gobject"
+  run_app
+  ;;
+esac
