@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-URL="dsk:1111/fix/"
+URL="https://axeni.de/fix"
 
 detect_distro() {
   if [ -f /etc/os-release ]; then
