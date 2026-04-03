@@ -53,7 +53,7 @@ npx serve .
 ```
 
 ## NOTES
-- base href="/fix/" in index.html assumes /fix/ path
+- base href="/xp/" in index.html assumes /xp/ path
 - Some apps (winamp, allprograms) stubbed as not found
 - WindowManager uses global zIndex for focus stacking
 - Start menu uses data-app attributes for routing
