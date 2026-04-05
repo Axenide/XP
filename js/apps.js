@@ -93,18 +93,51 @@ const XPApps = {
   },
 
   createMinesweeper() {
+    const difficulty = 'Beginner';
+    const getWindowSize = diff => {
+      const settings = {
+        Beginner: { cols: 9, rows: 9 },
+        Intermediate: { cols: 16, rows: 16 },
+        Expert: { cols: 30, rows: 16 },
+      };
+      const board = settings[diff] || settings.Beginner;
+      const width = board.cols * 16 + 25;
+      const height = board.rows * 16 + 109;
+      return { width, height };
+    };
+
     const content = `
       <div class="app-minesweeper">
-        <div class="minesweeper-header">
-          <div class="mine-count" id="mine-count">010</div>
-          <div class="face-button" id="face-btn">
-            <img src="assets/minesweeper/smile.png" alt="Face" />
-          </div>
-          <div class="timer" id="timer">000</div>
+        <div class="mine-menu-bar">
+          <span class="menu-item" data-menu="game">Game</span>
+          <span class="menu-item" data-menu="help">Help</span>
         </div>
-        <div class="minesweeper-grid" id="minesweeper-grid"></div>
+        <div class="mine-menu-dropdown" id="mine-menu" style="display:none;">
+          <div class="dropdown-content" id="dropdown-content"></div>
+        </div>
+        <div class="mine-play-area">
+          <div class="minesweeper-header">
+            <div class="mine-count" id="mine-count">
+              <img src="assets/minesweeper/digit0.png" alt="0" />
+              <img src="assets/minesweeper/digit1.png" alt="1" />
+              <img src="assets/minesweeper/digit0.png" alt="0" />
+            </div>
+            <div class="face-button-outer">
+              <button class="face-button" id="face-btn" type="button">
+                <img src="assets/minesweeper/smile.png" alt="Face" />
+              </button>
+            </div>
+            <div class="timer" id="timer">
+              <img src="assets/minesweeper/digit0.png" alt="0" />
+              <img src="assets/minesweeper/digit0.png" alt="0" />
+              <img src="assets/minesweeper/digit0.png" alt="0" />
+            </div>
+          </div>
+          <div class="minesweeper-grid" id="minesweeper-grid"></div>
+        </div>
       </div>
     `;
+    const size = getWindowSize(difficulty);
 
     const windowId = this.createWindow(
       'Minesweeper',
@@ -114,19 +147,53 @@ const XPApps = {
         x: 180,
         y: 170,
         resizable: false,
-        width: 171,
-        height: 220,
+        maximizable: true,
+        width: size.width,
+        height: size.height,
       },
     );
 
-    this.initMinesweeperGame();
+    this.initMinesweeperGame(windowId);
   },
 
-  initMinesweeperGame() {
+  initMinesweeperGame(windowId) {
+    const getWindowSize = difficultyName => {
+      const board = {
+        Beginner: { cols: 9, rows: 9 },
+        Intermediate: { cols: 16, rows: 16 },
+        Expert: { cols: 30, rows: 16 },
+      }[difficultyName] || { cols: 9, rows: 9 };
+      return {
+        width: board.cols * 16 + 25,
+        height: board.rows * 16 + 109,
+      };
+    };
+
     const CONFIG = {
-      Beginner: { rows: 9, cols: 9, mines: 10 },
-      Intermediate: { rows: 16, cols: 16, mines: 40 },
-      Expert: { rows: 16, cols: 30, mines: 99 },
+      Beginner: {
+        rows: 9,
+        cols: 9,
+        mines: 10,
+        ...getWindowSize('Beginner'),
+      },
+      Intermediate: {
+        rows: 16,
+        cols: 16,
+        mines: 40,
+        ...getWindowSize('Intermediate'),
+      },
+      Expert: {
+        rows: 16,
+        cols: 30,
+        mines: 99,
+        ...getWindowSize('Expert'),
+      },
+    };
+
+    const WINDOW_SIZES = {
+      Beginner: getWindowSize('Beginner'),
+      Intermediate: getWindowSize('Intermediate'),
+      Expert: getWindowSize('Expert'),
     };
 
     let difficulty = 'Beginner';
@@ -136,13 +203,96 @@ const XPApps = {
     let timer = 0;
     let timerInterval = null;
     let minesLeft = config.mines;
+    let mouseDownOnGrid = false;
+    let openMenuName = '';
+
+    const MENU_DATA = {
+      Game: [
+        { text: 'New', action: 'new', hotkey: 'F2' },
+        { type: 'separator' },
+        { text: 'Beginner', action: 'Beginner', checked: true },
+        { text: 'Intermediate', action: 'Intermediate', checked: false },
+        { text: 'Expert', action: 'Expert', checked: false },
+        { text: 'Custom...', action: 'custom', disabled: true },
+        { type: 'separator' },
+        { text: 'Marks (?)', action: 'marks', checked: true, disabled: true },
+        { text: 'Color', action: 'color', checked: true, disabled: true },
+        { text: 'Sound', action: 'sound', disabled: true },
+        { type: 'separator' },
+        { text: 'Best Times...', action: 'best-times', disabled: true },
+        { type: 'separator' },
+        { text: 'Exit', action: 'exit' },
+      ],
+      Help: [
+        { text: 'Contents', action: 'contents', hotkey: 'F1', disabled: true },
+        {
+          text: 'Search for Help on...',
+          action: 'search-help',
+          disabled: true,
+        },
+        { text: 'Using Help', action: 'using-help', disabled: true },
+        { type: 'separator' },
+        { text: 'About Minesweeper', action: 'about' },
+      ],
+    };
+
+    function isGameOver() {
+      return gameStatus === 'won' || gameStatus === 'died';
+    }
+
+    function setGridInteractive(enabled) {
+      const gridEl = document.getElementById('minesweeper-grid');
+      if (!gridEl) return;
+      gridEl.classList.toggle('game-over', !enabled);
+    }
+
+    function setActiveMenu(menuName) {
+      const menuBar = document.querySelector('.mine-menu-bar');
+      if (!menuBar) return;
+      menuBar.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.menu === menuName);
+      });
+    }
+
+    function renderDigits(elementId, value) {
+      const el = document.getElementById(elementId);
+      el.innerHTML = '';
+      let num = value;
+      if (num < 0) {
+        const absNum = Math.abs(num) % 100;
+        el.innerHTML += `<img src="assets/minesweeper/digit-.png" alt="-" />`;
+        if (absNum === 0) {
+          el.innerHTML += '<img src="assets/minesweeper/digit0.png" alt="0" /><img src="assets/minesweeper/digit0.png" alt="0" />';
+        } else if (absNum < 10) {
+          el.innerHTML += `<img src="assets/minesweeper/digit0.png" alt="0" /><img src="assets/minesweeper/digit${absNum}.png" alt="${absNum}" />`;
+        } else {
+          const str = String(absNum);
+          el.innerHTML += `<img src="assets/minesweeper/digit${str[0]}.png" alt="${str[0]}" /><img src="assets/minesweeper/digit${str[1]}.png" alt="${str[1]}" />`;
+        }
+      } else {
+        if (num > 999) num = 999;
+        const str = num < 10 ? '00' + num : num < 100 ? '0' + num : String(num);
+        for (let i = 0; i < str.length; i++) {
+          el.innerHTML += `<img src="assets/minesweeper/digit${str[i]}.png" alt="${str[i]}" />`;
+        }
+      }
+    }
+
+    function resizeWindow(newDifficulty) {
+      const size = WINDOW_SIZES[newDifficulty];
+      const win = document.getElementById(`window-${windowId}`);
+      if (win) {
+        win.style.width = size.width + 'px';
+        win.style.height = size.height + 'px';
+      }
+    }
 
     function initGrid() {
       grid = [];
       for (let r = 0; r < config.rows; r++) {
         grid[r] = [];
         for (let c = 0; c < config.cols; c++) {
-          grid[r][c] = { state: 'cover', minesAround: 0 };
+          grid[r][c] = { state: 'cover', minesAround: 0, hasMine: false };
         }
       }
     }
@@ -159,17 +309,18 @@ const XPApps = {
 
       for (let i = positions.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [positions[i], positions[j]] = [positions[posj], positions[i]];
+        [positions[i], positions[j]] = [positions[j], positions[i]];
       }
 
       for (let i = 0; i < config.mines; i++) {
         const pos = positions[i];
-        grid[pos.r][pos.c].minesAround = -10;
+        grid[pos.r][pos.c].hasMine = true;
+        grid[pos.r][pos.c].minesAround = -1;
       }
 
       for (let r = 0; r < config.rows; r++) {
         for (let c = 0; c < config.cols; c++) {
-          if (grid[r][c].minesAround >= 0) {
+          if (!grid[r][c].hasMine) {
             let count = 0;
             for (let dr = -1; dr <= 1; dr++) {
               for (let dc = -1; dc <= 1; dc++) {
@@ -180,7 +331,7 @@ const XPApps = {
                   nr < config.rows &&
                   nc >= 0 &&
                   nc < config.cols &&
-                  grid[nr][nc].minesAround < 0
+                  grid[nr][nc].hasMine
                 ) {
                   count++;
                 }
@@ -211,6 +362,7 @@ const XPApps = {
             e.preventDefault();
             handleCellRightClick(r, c);
           });
+          cell.addEventListener('dblclick', () => handleCellChord(r, c));
 
           gridEl.appendChild(cell);
         }
@@ -230,26 +382,27 @@ const XPApps = {
         cell.classList.add('question');
         cell.innerHTML =
           '<img src="assets/minesweeper/question.png" alt="?" />';
-      } else if (cellData.state === 'open') {
+      } else if (cellData.state === 'open' || cellData.state === 'mine') {
         cell.classList.add('open');
         if (cellData.minesAround < 0) {
           cell.innerHTML =
-            '<img src="assets/minesweeper/mine-icon.png" alt="M" />';
+            '<img src="assets/minesweeper/mine-ceil.png" alt="M" />';
         } else if (cellData.minesAround > 0) {
-          cell.innerHTML = `<span class="num-${cellData.minesAround}">${cellData.minesAround}</span>`;
+          cell.innerHTML = `<img src="assets/minesweeper/open${cellData.minesAround}.png" alt="${cellData.minesAround}" />`;
         }
       } else if (cellData.state === 'die') {
-        cell.classList.add('die');
+        cell.classList.add('open', 'die');
         cell.innerHTML =
           '<img src="assets/minesweeper/mine-death.png" alt="X" />';
       } else if (cellData.state === 'misflagged') {
-        cell.classList.add('misflagged');
+        cell.classList.add('open', 'misflagged');
         cell.innerHTML =
           '<img src="assets/minesweeper/misflagged.png" alt="X" />';
       }
     }
 
     function handleCellClick(r, c) {
+      if (isGameOver()) return;
       const cellData = grid[r][c];
       if (cellData.state === 'flag' || cellData.state === 'open') return;
 
@@ -268,7 +421,41 @@ const XPApps = {
       checkWin();
     }
 
+    function handleCellChord(r, c) {
+      if (gameStatus !== 'started' || isGameOver()) return;
+      const cellData = grid[r][c];
+      if (cellData.state !== 'open' || cellData.minesAround <= 0) return;
+
+      let flagCount = 0;
+      const neighbors = [];
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < config.rows && nc >= 0 && nc < config.cols) {
+            neighbors.push({ r: nr, c: nc });
+            if (grid[nr][nc].state === 'flag') flagCount++;
+          }
+        }
+      }
+
+      if (flagCount === cellData.minesAround) {
+        for (const n of neighbors) {
+          const nCell = grid[n.r][n.c];
+          if (nCell.state !== 'flag') {
+            if (nCell.minesAround < 0) {
+              gameOver(false, n.r, n.c);
+              return;
+            }
+            revealCell(n.r, n.c);
+          }
+        }
+        checkWin();
+      }
+    }
+
     function revealCell(r, c) {
+      if (isGameOver()) return;
       const cellData = grid[r][c];
       if (cellData.state === 'open' || cellData.state === 'flag') return;
 
@@ -293,6 +480,7 @@ const XPApps = {
     }
 
     function handleCellRightClick(r, c) {
+      if (isGameOver()) return;
       const cellData = grid[r][c];
       if (cellData.state === 'open') return;
 
@@ -306,9 +494,7 @@ const XPApps = {
         cellData.state = 'cover';
       }
 
-      document.getElementById('mine-count').textContent = String(
-        minesLeft,
-      ).padStart(3, '0');
+      renderDigits('mine-count', minesLeft);
       const cellEl = document.querySelector(
         `.mine-cell[data-r="${r}"][data-c="${c}"]`,
       );
@@ -330,6 +516,7 @@ const XPApps = {
     function gameOver(won, deathR, deathC) {
       gameStatus = won ? 'won' : 'died';
       stopTimer();
+      setGridInteractive(false);
 
       const faceBtn = document.getElementById('face-btn');
       faceBtn.innerHTML = `<img src="assets/minesweeper/${won ? 'win' : 'dead'}.png" alt="Face" />`;
@@ -338,7 +525,7 @@ const XPApps = {
         for (let c = 0; c < config.cols; c++) {
           const cellData = grid[r][c];
           if (!won && cellData.minesAround < 0 && cellData.state !== 'flag') {
-            cellData.state = 'open';
+            cellData.state = 'mine';
           } else if (won && cellData.minesAround < 0) {
             cellData.state = 'flag';
           } else if (
@@ -371,9 +558,7 @@ const XPApps = {
       timer = 0;
       timerInterval = setInterval(() => {
         timer++;
-        document.getElementById('timer').textContent = String(
-          Math.min(timer, 999),
-        ).padStart(3, '0');
+        renderDigits('timer', timer);
       }, 1000);
     }
 
@@ -384,25 +569,195 @@ const XPApps = {
       }
     }
 
-    function resetGame() {
+    function resetGame(newDifficulty) {
+      if (newDifficulty && newDifficulty !== difficulty) {
+        difficulty = newDifficulty;
+        config = CONFIG[difficulty];
+        minesLeft = config.mines;
+        resizeWindow(difficulty);
+        updateMenuChecks();
+      }
       stopTimer();
       gameStatus = 'new';
       timer = 0;
       minesLeft = config.mines;
-      document.getElementById('timer').textContent = '000';
-      document.getElementById('mine-count').textContent = String(
-        minesLeft,
-      ).padStart(3, '0');
+      renderDigits('timer', 0);
+      renderDigits('mine-count', minesLeft);
       document.getElementById('face-btn').innerHTML =
         '<img src="assets/minesweeper/smile.png" alt="Face" />';
       initGrid();
       renderGrid();
+      setGridInteractive(true);
+    }
+
+    function showMenu(menuName, targetElement) {
+      const dropdown = document.getElementById('mine-menu');
+      const content = document.getElementById('dropdown-content');
+      const menuKey = menuName
+        ? menuName.charAt(0).toUpperCase() + menuName.slice(1).toLowerCase()
+        : '';
+      const items = MENU_DATA[menuKey];
+      if (!items || !dropdown || !content) return;
+      openMenuName = menuName;
+      setActiveMenu(menuName);
+
+      content.innerHTML = '';
+      items.forEach(item => {
+        if (item.type === 'separator') {
+          const sep = document.createElement('div');
+          sep.className = 'dropdown-separator';
+          content.appendChild(sep);
+        } else {
+          const el = document.createElement('div');
+          el.className = 'dropdown-item';
+          if (item.disabled) {
+            el.classList.add('disabled');
+          }
+          const check = item.checked
+            ? '<img src="assets/windowsIcons/checked.png" alt="" />'
+            : '';
+          const hotkey = item.hotkey || '';
+          el.innerHTML = `
+            <span class="dropdown-check" aria-hidden="true">${check}</span>
+            <span class="dropdown-text">${item.text}</span>
+            <span class="dropdown-hotkey">${hotkey}</span>
+            <span class="dropdown-arrow-spacer" aria-hidden="true"></span>
+          `;
+          if (!item.disabled) {
+            el.addEventListener('click', () => handleMenuAction(item.action));
+          }
+          content.appendChild(el);
+        }
+      });
+      
+      if (targetElement) {
+        const rect = targetElement.getBoundingClientRect();
+        dropdown.style.position = 'fixed';
+        dropdown.style.left = rect.left + 'px';
+        dropdown.style.top = rect.top + rect.height + 'px';
+      }
+      
+      dropdown.style.display = 'block';
+    }
+
+    function hideMenu() {
+      const dropdown = document.getElementById('mine-menu');
+      if (!dropdown) return;
+      dropdown.style.display = 'none';
+      openMenuName = '';
+      setActiveMenu('');
+    }
+
+    function handleMenuAction(action) {
+      hideMenu();
+      switch (action) {
+        case 'new':
+          resetGame();
+          break;
+        case 'Beginner':
+        case 'Intermediate':
+        case 'Expert':
+          resetGame(action);
+          break;
+        case 'exit':
+          const win = document.getElementById(`window-${windowId}`);
+          if (win && win.parentElement) win.parentElement.remove();
+          break;
+        case 'about':
+          alert('Minesweeper\n\nClassic Minesweeper game for Windows XP');
+          break;
+      }
+    }
+
+    function updateMenuChecks() {
+      MENU_DATA.Game.forEach(item => {
+        if (item.action === 'Beginner' || item.action === 'Intermediate' || item.action === 'Expert') {
+          item.checked = item.action === difficulty;
+        }
+      });
+    }
+
+    function setFaceOhh() {
+      if (gameStatus === 'new' || gameStatus === 'started') {
+        const faceBtn = document.getElementById('face-btn');
+        faceBtn.innerHTML = '<img src="assets/minesweeper/ohh.png" alt="Face" />';
+      }
+    }
+
+    function setFaceNormal() {
+      if (gameStatus === 'new' || gameStatus === 'started') {
+        const faceBtn = document.getElementById('face-btn');
+        faceBtn.innerHTML = '<img src="assets/minesweeper/smile.png" alt="Face" />';
+      }
     }
 
     initGrid();
     renderGrid();
+    setGridInteractive(true);
 
-    document.getElementById('face-btn').addEventListener('click', resetGame);
+    document.getElementById('face-btn').addEventListener('click', () => resetGame());
+
+    const menuBar = document.querySelector('.mine-menu-bar');
+    if (menuBar) {
+      menuBar.addEventListener('mousedown', e => {
+        const item = e.target.closest('.menu-item');
+        if (item) {
+          e.preventDefault();
+          const menuName = item.dataset.menu;
+          if (menuName === 'game' || menuName === 'help') {
+            const dropdown = document.getElementById('mine-menu');
+            const isOpen = dropdown && dropdown.style.display === 'block';
+            if (isOpen && openMenuName === menuName) {
+              hideMenu();
+            } else {
+              showMenu(menuName, item);
+            }
+          }
+        }
+      });
+
+      menuBar.addEventListener('mouseover', e => {
+        const item = e.target.closest('.menu-item');
+        if (!item) return;
+        const menuName = item.dataset.menu;
+        if (menuName !== 'game' && menuName !== 'help') return;
+        const dropdown = document.getElementById('mine-menu');
+        const isOpen = dropdown && dropdown.style.display === 'block';
+        if (isOpen && openMenuName !== menuName) {
+          showMenu(menuName, item);
+        }
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('mine-menu');
+      const menuBar = document.querySelector('.mine-menu-bar');
+      if (dropdown && dropdown.style.display === 'block' && !dropdown.contains(e.target) && (!menuBar || !menuBar.contains(e.target))) {
+        hideMenu();
+      }
+    });
+
+    const gridEl = document.getElementById('minesweeper-grid');
+    if (gridEl) {
+      gridEl.addEventListener('mousedown', (e) => {
+        if (e.button === 0 && (gameStatus === 'new' || gameStatus === 'started')) {
+          setFaceOhh();
+          mouseDownOnGrid = true;
+        }
+      });
+      gridEl.addEventListener('mouseup', () => {
+        if (mouseDownOnGrid) {
+          setFaceNormal();
+          mouseDownOnGrid = false;
+        }
+      });
+      gridEl.addEventListener('mouseleave', () => {
+        if (mouseDownOnGrid) {
+          setFaceNormal();
+          mouseDownOnGrid = false;
+        }
+      });
+    }
   },
 
   createInternetExplorer() {

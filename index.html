@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Windows XP</title>
-    <base href="/xp/" />
+    <base href="." />
     <link rel="stylesheet" href="assets/font.css" />
     <link rel="stylesheet" href="css/main.css" />
   </head>
@@ -267,128 +267,140 @@
     <script>
       const desktopIcons = [
         {
-          id: 'ie',
-          title: 'Internet Explorer',
-          icon: 'assets/windowsIcons/ie.png',
-          app: 'ie',
+          id: "recyclebin",
+          title: "Recycle Bin",
+          icon: "assets/windowsIcons/Empty Recycle Bin.ico",
+          app: "recyclebin",
+          showOverlay: false,
         },
         {
-          id: 'minesweeper',
-          title: 'Minesweeper',
-          icon: 'assets/minesweeper/mine-icon.png',
-          app: 'minesweeper',
+          id: "ie",
+          title: "Internet Explorer",
+          icon: "assets/windowsIcons/ie.png",
+          app: "ie",
         },
         {
-          id: 'mycomputer',
-          title: 'My Computer',
-          icon: 'assets/windowsIcons/676(32x32).png',
-          app: 'mycomputer',
+          id: "minesweeper",
+          title: "Minesweeper",
+          icon: "assets/minesweeper/mine-icon.png",
+          app: "minesweeper",
         },
         {
-          id: 'notepad',
-          title: 'Notepad',
-          icon: 'assets/windowsIcons/327(32x32).png',
-          app: 'notepad',
+          id: "mycomputer",
+          title: "My Computer",
+          icon: "assets/windowsIcons/676(32x32).png",
+          app: "mycomputer",
         },
         {
-          id: 'winamp',
-          title: 'Winamp',
-          icon: 'assets/windowsIcons/winamp.png',
-          app: 'winamp',
+          id: "notepad",
+          title: "Notepad",
+          icon: "assets/windowsIcons/327(32x32).png",
+          app: "notepad",
         },
         {
-          id: 'paint',
-          title: 'Paint',
-          icon: 'assets/windowsIcons/680(32x32).png',
-          app: 'paint',
+          id: "winamp",
+          title: "Winamp",
+          icon: "assets/windowsIcons/winamp.png",
+          app: "winamp",
+        },
+        {
+          id: "paint",
+          title: "Paint",
+          icon: "assets/windowsIcons/680(32x32).png",
+          app: "paint",
         },
       ];
 
       let selectedIcon = null;
 
       function initDesktop() {
-        const iconsContainer = document.getElementById('desktop-icons');
+        const iconsContainer = document.getElementById("desktop-icons");
         desktopIcons.forEach((icon, index) => {
-          const el = document.createElement('div');
-          el.className = 'xp-icon';
+          const el = document.createElement("div");
+          el.className = "xp-icon";
           el.dataset.app = icon.app;
+          const showOverlay = icon.showOverlay !== false;
           el.innerHTML = `
           <div class="xp-icon-img">
             <img src="${icon.icon}" alt="${icon.title}" />
-            <img
+            ${
+              showOverlay
+                ? `<img
               src="assets/windowsIcons/w2k_shortcut_overlay.ico"
               alt=""
               class="xp-icon-shortcut-overlay"
-            />
+            />`
+                : ""
+            }
           </div>
           <div class="xp-icon-text">${icon.title}</div>
         `;
-          el.style.top = 2 + index * 90 + 'px';
+          el.style.top = 2 + index * 90 + "px";
 
-          el.addEventListener('click', e => {
+          el.addEventListener("click", (e) => {
             e.stopPropagation();
             document
-              .querySelectorAll('.xp-icon')
-              .forEach(i => i.classList.remove('selected'));
-            el.classList.add('selected');
+              .querySelectorAll(".xp-icon")
+              .forEach((i) => i.classList.remove("selected"));
+            el.classList.add("selected");
             selectedIcon = icon.app;
           });
 
-          el.addEventListener('dblclick', () => {
+          el.addEventListener("dblclick", () => {
             window.XPApps.open(icon.app);
           });
 
           iconsContainer.appendChild(el);
         });
 
-        document.querySelector('.xp-desktop').addEventListener('click', e => {
-          if (e.target.classList.contains('xp-desktop')) {
+        document.querySelector(".xp-desktop").addEventListener("click", (e) => {
+          if (e.target.classList.contains("xp-desktop")) {
             document
-              .querySelectorAll('.xp-icon')
-              .forEach(i => i.classList.remove('selected'));
+              .querySelectorAll(".xp-icon")
+              .forEach((i) => i.classList.remove("selected"));
             selectedIcon = null;
           }
         });
       }
 
       function initStartMenu() {
-        const startButton = document.getElementById('start-button');
-        const startMenu = document.getElementById('start-menu');
+        const startButton = document.getElementById("start-button");
+        const startMenu = document.getElementById("start-menu");
 
-        startButton.addEventListener('click', e => {
+        startButton.addEventListener("click", (e) => {
           e.stopPropagation();
           const isVisible =
-            window.getComputedStyle(startMenu).display !== 'none';
-          startMenu.style.display = isVisible ? 'none' : 'flex';
+            window.getComputedStyle(startMenu).display !== "none";
+          startMenu.style.display = isVisible ? "none" : "flex";
         });
 
-        startMenu.querySelectorAll('.menu-item').forEach(item => {
-          item.addEventListener('click', () => {
+        startMenu.querySelectorAll(".menu-item").forEach((item) => {
+          item.addEventListener("click", () => {
             const app = item.dataset.app;
             if (app) {
               window.XPApps.open(app);
-              startMenu.style.display = 'none';
+              startMenu.style.display = "none";
             }
           });
         });
 
-        startMenu.querySelectorAll('.footer-item').forEach(item => {
-          item.addEventListener('click', () => {
+        startMenu.querySelectorAll(".footer-item").forEach((item) => {
+          item.addEventListener("click", () => {
             alert(
-              item.dataset.action === 'shutdown'
-                ? 'Shutting down...'
-                : 'Logging off...',
+              item.dataset.action === "shutdown"
+                ? "Shutting down..."
+                : "Logging off...",
             );
-            startMenu.style.display = 'none';
+            startMenu.style.display = "none";
           });
         });
 
-        document.addEventListener('click', e => {
+        document.addEventListener("click", (e) => {
           if (
             !startButton.contains(e.target) &&
             !startMenu.contains(e.target)
           ) {
-            startMenu.style.display = 'none';
+            startMenu.style.display = "none";
           }
         });
       }
@@ -397,27 +409,23 @@
         function updateClock() {
           const now = new Date();
           let hour = now.getHours();
-          let ampm = 'AM';
+          let ampm = "AM";
           if (hour >= 12) {
             hour -= 12;
-            ampm = 'PM';
+            ampm = "PM";
           }
           if (hour === 0) hour = 12;
-          const min = now
-            .getMinutes()
-            .toString()
-            .padStart(2, '0');
-          document.getElementById(
-            'clock',
-          ).textContent = `${hour}:${min} ${ampm}`;
+          const min = now.getMinutes().toString().padStart(2, "0");
+          document.getElementById("clock").textContent =
+            `${hour}:${min} ${ampm}`;
         }
         updateClock();
         setInterval(updateClock, 1000);
       }
 
       function initTrayBalloon() {
-        const balloon = document.getElementById('tray-balloon');
-        const closeBtn = document.getElementById('tray-balloon-close');
+        const balloon = document.getElementById("tray-balloon");
+        const closeBtn = document.getElementById("tray-balloon-close");
         if (!balloon || !closeBtn) return;
 
         let shown = false;
@@ -439,11 +447,11 @@
           clearFadeTimers();
 
           fadeTimer = setTimeout(() => {
-            balloon.classList.remove('fading-in');
-            balloon.classList.add('fading-out');
+            balloon.classList.remove("fading-in");
+            balloon.classList.add("fading-out");
             hideTimer = setTimeout(() => {
-              balloon.style.display = 'none';
-              balloon.classList.remove('fading-out');
+              balloon.style.display = "none";
+              balloon.classList.remove("fading-out");
               shown = false;
             }, 1000);
           }, 15000);
@@ -453,46 +461,46 @@
           if (removed) return;
 
           clearFadeTimers();
-          balloon.style.opacity = '0';
-          balloon.classList.remove('fading-out');
-          balloon.classList.add('fading-in');
-          balloon.style.display = 'block';
+          balloon.style.opacity = "0";
+          balloon.classList.remove("fading-out");
+          balloon.classList.add("fading-in");
+          balloon.style.display = "block";
 
           shown = true;
           startFadeOutCountdown();
         }, 3000);
 
-        balloon.addEventListener('mouseenter', () => {
+        balloon.addEventListener("mouseenter", () => {
           hovering = true;
           clearFadeTimers();
-          balloon.classList.remove('fading-out');
+          balloon.classList.remove("fading-out");
         });
 
-        balloon.addEventListener('mouseleave', () => {
+        balloon.addEventListener("mouseleave", () => {
           hovering = false;
           startFadeOutCountdown();
         });
 
-        balloon.addEventListener('animationend', event => {
-          if (event.animationName === 'tray-balloon-fadein') {
-            balloon.classList.remove('fading-in');
-            balloon.style.opacity = '1';
+        balloon.addEventListener("animationend", (event) => {
+          if (event.animationName === "tray-balloon-fadein") {
+            balloon.classList.remove("fading-in");
+            balloon.style.opacity = "1";
           }
         });
 
-        closeBtn.addEventListener('click', () => {
+        closeBtn.addEventListener("click", () => {
           removed = true;
           shown = false;
           hovering = false;
           if (showTimer) clearTimeout(showTimer);
           clearFadeTimers();
-          balloon.classList.remove('fading-in');
-          balloon.classList.remove('fading-out');
-          balloon.style.display = 'none';
+          balloon.classList.remove("fading-in");
+          balloon.classList.remove("fading-out");
+          balloon.style.display = "none";
         });
       }
 
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener("DOMContentLoaded", () => {
         XPWindowManager.init();
         initDesktop();
         initStartMenu();

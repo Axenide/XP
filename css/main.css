@@ -430,6 +430,38 @@ body {
   background-color: #136dff;
 }
 
+.window-btn.maximize.disabled {
+  box-shadow: inset 0 -1px 2px 1px #4646ff;
+  background-image: radial-gradient(
+    circle at 90% 90%,
+    #0054e9 0%,
+    #2263d5 55%,
+    #4479e4 70%,
+    #a3bbec 90%,
+    white 100%
+  );
+  opacity: 0.6;
+  cursor: default;
+}
+
+.window-btn.maximize.disabled::before {
+  content: "";
+  position: absolute;
+  display: block;
+  left: 4px;
+  top: 4px;
+  box-shadow:
+    inset 0 3px white,
+    inset 0 0 0 1px white;
+  height: 12px;
+  width: 12px;
+}
+
+.window-btn.maximize.disabled:hover,
+.window-btn.maximize.disabled:active {
+  filter: none;
+}
+
 .window-btn.close {
   box-shadow: inset 0 -1px 2px 1px #da4600;
   background-image: radial-gradient(
@@ -564,7 +596,7 @@ body {
   padding: 0 8px;
   height: 22px;
   margin-top: 2px;
-  margin-right: 2px;
+  margin-right: 0;
   max-width: 150px;
   color: white;
   font-size: 11px;
@@ -1108,16 +1140,170 @@ body {
 .app-minesweeper {
   height: 100%;
   background: #c0c0c0;
-  padding: 3px;
+  padding: 0;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.mine-menu-bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 20px;
+  line-height: 20px;
+  gap: 0;
+  background: #ece9d8;
+  margin-bottom: 0;
+}
+
+.mine-play-area {
+  border-left: 3px solid rgb(245, 245, 245);
+  border-top: 3px solid rgb(245, 245, 245);
+  background: #c0c0c0;
+  padding: 5px;
+}
+
+.mine-menu-bar .menu-item {
+  padding: 0 7px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.mine-menu-bar .menu-item:hover {
+  background: #1660e8;
+  color: #fff;
+}
+
+.mine-menu-bar .menu-item.active {
+  background: #1660e8;
+  color: #fff;
+}
+
+.mine-menu-dropdown {
+  position: absolute;
+  z-index: 1000;
+}
+
+.dropdown-content {
+  background: #fff;
+  border: 1px solid #808080;
+  box-shadow: 2px 2px 1px rgb(100, 100, 100);
+  width: max-content;
+  min-width: 0;
+  padding: 2px;
+  line-height: 18px;
+  display: inline-grid;
+  grid-template-columns: max-content;
+}
+
+.dropdown-item {
+  padding: 0;
+  cursor: pointer;
+  font-size: 11px;
+  display: grid;
+  grid-template-columns: 16px auto auto 15px;
+  align-items: center;
+  min-height: 18px;
+  line-height: 18px;
+  color: #000;
+}
+
+.dropdown-item:hover {
+  background: #1660e8;
+  color: #fff;
+}
+
+.dropdown-item .dropdown-check {
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.dropdown-item .dropdown-check img {
+  width: 7px;
+  height: 7px;
+}
+
+.dropdown-item .dropdown-text {
+  white-space: nowrap;
+  padding-right: 10px;
+}
+
+.dropdown-item .dropdown-hotkey {
+  color: #000;
+  font-size: 11px;
+  white-space: nowrap;
+  min-width: 0;
+  padding-right: 3px;
+  text-align: right;
+}
+
+.dropdown-item .dropdown-arrow-spacer {
+  width: 15px;
+}
+
+.dropdown-item:hover .dropdown-hotkey {
+  color: inherit;
+}
+
+.dropdown-item.disabled {
+  color: #8d8d8d;
+  cursor: default;
+}
+
+.dropdown-item.disabled:hover {
+  background: transparent;
+  color: #8d8d8d;
+}
+
+.dropdown-item.disabled .hotkey,
+.dropdown-item.disabled:hover .hotkey,
+.dropdown-item.disabled .dropdown-hotkey,
+.dropdown-item.disabled:hover .dropdown-hotkey {
+  color: #8d8d8d;
+}
+
+.dropdown-item.disabled .dropdown-check {
+  color: #8d8d8d;
+}
+
+.dropdown-separator {
+  height: 7px;
+  padding: 3px 1px;
+  background-color: rgba(0, 0, 0, 0.2);
+  background-clip: content-box;
+  margin: 0;
+}
+
+.mine-count,
+.timer {
+  display: flex;
+  gap: 0;
+  background: black;
+  padding: 0;
+  width: 40px;
+  height: 24px;
+  border-width: 0 1px 1px 0;
+  border-style: solid;
+  border-color: #fff;
+  justify-content: center;
+  align-items: center;
+}
+
+.mine-count img,
+.timer img {
+  width: 13px;
+  height: 23px;
 }
 
 .minesweeper-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 3px;
+  height: 34px;
+  padding: 3px 7px 3px 4px;
   border: 2px solid;
   border-color: #808080 #fff #fff #808080;
   margin-bottom: 5px;
@@ -1129,43 +1315,58 @@ body {
   font-size: 20px;
   background: black;
   color: red;
-  padding: 1px 3px;
-  min-width: 35px;
+  min-width: 40px;
   text-align: center;
 }
 
+.face-button-outer {
+  width: 24px;
+  height: 24px;
+  border-top: 1px solid rgb(128, 128, 128);
+  border-left: 1px solid rgb(128, 128, 128);
+  border-radius: 2px;
+  transform: translateX(1px);
+}
+
 .face-button {
-  width: 26px;
-  height: 26px;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 2px;
+  background-color: rgb(192, 192, 192);
   border: 2px solid;
   border-color: #fff #808080 #808080 #fff;
   cursor: pointer;
+  outline: none;
 }
 
 .face-button:active {
-  border-color: #808080 #fff #fff #808080;
+  border-width: 1px;
+  border-color: rgb(128, 128, 128);
 }
 
 .face-button img {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 
 .minesweeper-grid {
   display: grid;
   border: 3px solid;
   border-color: #808080 #fff #fff #808080;
+  background: #c0c0c0;
+}
+
+.minesweeper-grid.game-over {
+  pointer-events: none;
 }
 
 .mine-cell {
   width: 16px;
   height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   border: 2px solid;
   border-color: #fff #808080 #808080 #fff;
   background: #c0c0c0;
@@ -1173,6 +1374,7 @@ body {
 }
 
 .mine-cell.open {
+  position: relative;
   border: 1px solid #808080;
   background: #c0c0c0;
 }
@@ -1182,8 +1384,31 @@ body {
 }
 
 .mine-cell img {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.mine-cell.flagged,
+.mine-cell.question,
+.mine-cell.die,
+.mine-cell.misflagged {
+  position: relative;
+}
+
+.mine-cell.flagged img,
+.mine-cell.question img,
+.mine-cell.die img,
+.mine-cell.misflagged img {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+}
+
+.mine-cell.open img {
+  position: absolute;
+  top: -1px;
+  left: -1px;
 }
 
 .mine-cell .num-1 {

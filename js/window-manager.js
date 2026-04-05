@@ -60,8 +60,8 @@ const XPWindowManager = {
               : ''
           }
       ${
-        maximizable && resizable
-          ? `<button class="window-btn maximize" data-action="maximize" title="Maximize"></button>`
+        maximizable
+          ? `<button class="window-btn maximize${!resizable ? ' disabled' : ''}" data-action="maximize" title="${resizable ? 'Maximize' : 'Cannot maximize'}"></button>`
           : ''
       }
           ${
@@ -119,6 +119,7 @@ const XPWindowManager = {
     windowEl.querySelectorAll('.window-btn').forEach(btn => {
       btn.addEventListener('click', e => {
         e.stopPropagation();
+        if (btn.classList.contains('disabled')) return;
         const action = btn.dataset.action;
         this.handleWindowAction(id, action);
       });
@@ -247,10 +248,13 @@ const XPWindowManager = {
       win.originalWidth = win.element.offsetWidth;
       win.originalHeight = win.element.offsetHeight;
       win.maximized = true;
+      const taskbar = document.querySelector('.xp-taskbar');
+      const taskbarHeight = taskbar ? taskbar.offsetHeight : 30;
+      const maximizedHeight = window.innerHeight - taskbarHeight + 3;
       win.element.style.left = '-3px';
       win.element.style.top = '-3px';
       win.element.style.width = window.innerWidth + 6 + 'px';
-      win.element.style.height = window.innerHeight - 24 + 'px';
+      win.element.style.height = maximizedHeight + 'px';
       win.element.style.resize = 'none';
       win.element.classList.add('maximized');
       const maximizeButton = win.element.querySelector('.window-btn.maximize');
@@ -262,15 +266,12 @@ const XPWindowManager = {
       win.x = -3;
       win.y = -3;
       win.width = window.innerWidth + 6;
-      win.height = window.innerHeight - 24;
+      win.height = maximizedHeight;
     }
   },
 
   handleMouseDown(e) {
-    const header = e.target.closest('.window-header');
-    if (!header) return;
-
-    const windowEl = header.closest('.xp-window');
+    const windowEl = e.target.closest('.xp-window');
     if (!windowEl) return;
 
     const id = parseInt(
@@ -280,6 +281,9 @@ const XPWindowManager = {
     if (!win || win.minimized) return;
 
     this.focusWindow(id);
+
+    const header = e.target.closest('.window-header');
+    if (!header) return;
 
     if (e.target.classList.contains('window-btn')) return;
 
