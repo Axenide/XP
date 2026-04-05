@@ -113,7 +113,8 @@ const XPApps = {
     this.webampConstructorPromise = (async () => {
       const moduleCandidates = [
         'vendor/webamp/packages/webamp/built/webamp.bundle.min.mjs',
-        'https://unpkg.com/webamp@^2',
+        'https://unpkg.com/webamp@2.2.0/built/webamp.bundle.min.mjs',
+        'https://cdn.jsdelivr.net/npm/webamp@2.2.0/built/webamp.bundle.min.mjs',
       ];
       let lastError = null;
 

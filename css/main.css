@@ -1026,29 +1026,21 @@ textarea,
 .xp-start-menu .menu-left .menu-item[data-app="allprograms"] {
   height: 24px;
   justify-content: center;
+  align-items: center;
 }
 
-.xp-start-menu .menu-left .menu-item[data-app="allprograms"] .menu-item-text {
+.xp-start-menu .menu-left .menu-item[data-app="allprograms"] .menu-item-allprograms-label {
   font-weight: 400;
 }
 
 .xp-start-menu .menu-item-img-allprograms {
-  width: auto;
+  width: 18px;
   height: 18px;
   margin-left: 6px;
 }
 
 .xp-start-menu .menu-item-img-paint {
   image-rendering: pixelated;
-}
-
-.xp-start-menu .menu-item-text-allprograms {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  height: auto;
 }
 
 .xp-start-menu .menu-right .menu-item-img {
@@ -1066,13 +1058,6 @@ textarea,
 
 .xp-start-menu .menu-item-text div:first-child {
   font-weight: 400;
-}
-
-.xp-start-menu .menu-item-text.menu-item-text-allprograms {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
 }
 
 .xp-start-menu .menu-item.strong-item .menu-item-text div:first-child {
