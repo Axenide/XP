@@ -1,0 +1,3 @@
+[submodule "vendor/webamp"]
+	path = vendor/webamp
+	url = https://github.com/captbaritone/webamp.git

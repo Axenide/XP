@@ -31,6 +31,7 @@ const XPWindowManager = {
       onClose = null,
       onMinimize = null,
       onMaximize = null,
+      onRestore = null,
     } = options;
 
     const id = this.nextId++;
@@ -106,6 +107,7 @@ const XPWindowManager = {
       onClose,
       onMinimize,
       onMaximize,
+      onRestore,
     };
 
     this.windows.push(winData);
@@ -141,7 +143,6 @@ const XPWindowManager = {
         break;
       case 'minimize':
         this.minimizeWindow(id);
-        if (win.onMinimize) win.onMinimize();
         break;
       case 'maximize':
         this.toggleMaximize(id);
@@ -192,9 +193,10 @@ const XPWindowManager = {
     this.updateTaskbar();
   },
 
-  minimizeWindow(id) {
+  minimizeWindow(id, triggerCallback = true) {
     const win = this.windows.find(w => w.id === id);
     if (!win) return;
+    if (win.minimized) return;
 
     win.minimized = true;
     win.element.style.display = 'none';
@@ -208,6 +210,10 @@ const XPWindowManager = {
       this.focusedWindowId = null;
     }
 
+    if (triggerCallback && win.onMinimize) {
+      win.onMinimize();
+    }
+
     this.updateTaskbar();
   },
 
@@ -218,6 +224,7 @@ const XPWindowManager = {
     win.minimized = false;
     win.element.style.display = '';
     this.focusWindow(id);
+    if (win.onRestore) win.onRestore();
   },
 
   toggleMaximize(id) {

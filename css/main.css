@@ -1,7 +1,8 @@
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/dejavu-sans@5.2.5/latin.css");
 @import url("https://fonts.googleapis.com/css?family=Noto+Sans");
 
 :root {
-  --xpi-font: Tahoma, "Noto Sans", sans-serif;
+  --xpi-font: "DejaVu Sans", Tahoma, "Noto Sans", sans-serif;
   --xpi-blue-focused: #0831d9;
   --xpi-blue-unfocused: #6582f5;
   --xpi-text-shadow: 1px 1px black;
@@ -31,6 +32,14 @@ body {
   background: url("../assets/bliss.jpg") no-repeat center center fixed;
   background-size: cover;
   font-family: var(--xpi-font);
+}
+
+.xp-desktop,
+.xp-desktop * {
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: auto;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
 }
 
 .xp-desktop *:not(input):not(textarea) {
@@ -81,17 +90,35 @@ body {
 }
 
 .xp-icon-text {
-  width: 100%;
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
   font-size: 10px;
   color: white;
   text-shadow: 0 1px 1px black;
   margin-top: 5px;
   text-align: center;
-  word-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .xp-icon.selected .xp-icon-text {
-  background-color: #0b61ff;
+  background-color: #004E98;
+  position: relative;
+  padding: 1px;
+}
+
+.xp-icon.selected .xp-icon-text::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, #FFB167 0, #FFB167 1px, transparent 1px, transparent 2px) top left / 2px 1px repeat-x,
+    linear-gradient(to right, #FFB167 0, #FFB167 1px, transparent 1px, transparent 2px) bottom left / 2px 1px repeat-x,
+    linear-gradient(to bottom, #FFB167 0, #FFB167 1px, transparent 1px, transparent 2px) top left / 1px 2px repeat-y,
+    linear-gradient(to bottom, #FFB167 0, #FFB167 1px, transparent 1px, transparent 2px) top right / 1px 2px repeat-y;
+  image-rendering: pixelated;
 }
 
 .xp-window {
@@ -2192,26 +2219,31 @@ body {
 }
 
 /* App: Winamp */
-.app-winamp {
-  height: 100%;
-  background: #1e1e1e;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ccc;
+.webamp-host {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 10000;
 }
 
-.winamp-notice {
-  text-align: center;
+.webamp-host > * {
+  pointer-events: auto;
 }
 
-.winamp-notice h2 {
-  margin-bottom: 10px;
+.webamp-shell-window {
+  width: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
 }
 
-.winamp-notice p {
-  font-size: 12px;
-  margin: 5px;
+.webamp-shell-window .window-header-bg,
+.webamp-shell-window .window-header,
+.webamp-shell-window .window-content {
+  display: none !important;
 }
 
 /* App: Error Box */

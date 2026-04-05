@@ -1,5 +1,11 @@
 const XPApps = {
   apps: {},
+  webampInstance: null,
+  webampLoading: false,
+  webampConstructorPromise: null,
+  webampWindowId: null,
+  webampIgnoreWindowClose: false,
+  webampMinimized: false,
 
   init() {
     this.registerApps();
@@ -36,7 +42,7 @@ const XPApps = {
   },
 
   open(appName) {
-    if (appName === 'winamp' || appName === 'allprograms') {
+    if (appName === 'allprograms') {
       this.createErrorBox('C:\\nApplication not found', true);
       return;
     }
@@ -62,7 +68,71 @@ const XPApps = {
       minimizable: options.minimizable !== false,
       maximizable: options.maximizable !== false,
       closable: options.closable !== false,
+      showInTaskbar: options.showInTaskbar !== false,
+      minWidth: options.minWidth || 220,
+      minHeight: options.minHeight || 140,
+      onClose: options.onClose || null,
+      onMinimize: options.onMinimize || null,
+      onMaximize: options.onMaximize || null,
+      onRestore: options.onRestore || null,
     });
+  },
+
+  getWebampMountTarget() {
+    const desktop = document.querySelector('.xp-desktop');
+    if (!desktop) {
+      return null;
+    }
+
+    let mount = document.getElementById('webamp-host');
+    if (!mount) {
+      mount = document.createElement('div');
+      mount.id = 'webamp-host';
+      mount.className = 'webamp-host';
+      desktop.appendChild(mount);
+    }
+
+    return mount;
+  },
+
+  setWebampVisibility(visible) {
+    const webampRoot = document.getElementById('webamp');
+    if (webampRoot) {
+      webampRoot.style.display = visible ? '' : 'none';
+      webampRoot.style.pointerEvents = visible ? 'auto' : 'none';
+    }
+
+    this.webampMinimized = !visible;
+  },
+
+  getWebampConstructor() {
+    if (this.webampConstructorPromise) {
+      return this.webampConstructorPromise;
+    }
+
+    this.webampConstructorPromise = (async () => {
+      const moduleCandidates = [
+        'vendor/webamp/packages/webamp/built/webamp.bundle.min.mjs',
+        'https://unpkg.com/webamp@^2',
+      ];
+      let lastError = null;
+
+      for (const modulePath of moduleCandidates) {
+        try {
+          const webampModule = await import(modulePath);
+          if (webampModule?.default) {
+            return webampModule.default;
+          }
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      this.webampConstructorPromise = null;
+      throw lastError || new Error('Unable to load Webamp constructor');
+    })();
+
+    return this.webampConstructorPromise;
   },
 
   createNotepad() {
@@ -1034,24 +1104,119 @@ const XPApps = {
     );
   },
 
-  createWinamp() {
-    const content = `
-      <div class="app-winamp">
-        <div class="winamp-notice">
-          <h2>Winamp</h2>
-          <p>Winamp requires webamp library which is not available in static mode.</p>
-          <p>This is a placeholder window.</p>
-        </div>
-      </div>
-    `;
+  async createWinamp() {
+    if (this.webampWindowId !== null) {
+      XPWindowManager.restoreWindow(this.webampWindowId);
+      XPWindowManager.focusWindow(this.webampWindowId);
+    }
 
-    this.createWindow('Winamp', 'assets/windowsIcons/winamp.png', content, {
-      x: 0,
-      y: 0,
-      resizable: false,
-      width: 200,
-      height: 150,
-    });
+    if (this.webampInstance) {
+      this.setWebampVisibility(true);
+      return;
+    }
+
+    if (this.webampLoading) {
+      return;
+    }
+
+    this.webampLoading = true;
+
+    try {
+      this.webampWindowId = this.createWindow('Winamp', 'assets/windowsIcons/winamp.png', '', {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+        resizable: false,
+        minimizable: true,
+        maximizable: false,
+        onClose: () => {
+          if (this.webampIgnoreWindowClose) {
+            this.webampIgnoreWindowClose = false;
+            return;
+          }
+
+          this.setWebampVisibility(false);
+
+          if (this.webampInstance) {
+            this.webampInstance.close();
+          }
+          this.webampWindowId = null;
+        },
+        onMinimize: () => {
+          this.setWebampVisibility(false);
+        },
+        onRestore: () => {
+          this.setWebampVisibility(true);
+        },
+      });
+
+      const webampWindowEl = document.getElementById(`window-${this.webampWindowId}`);
+      if (webampWindowEl) {
+        webampWindowEl.classList.add('webamp-shell-window');
+      }
+
+      const mountTarget = this.getWebampMountTarget();
+      if (!mountTarget) {
+        throw new Error('Desktop mount point not found');
+      }
+
+      const Webamp = await this.getWebampConstructor();
+      const webamp = new Webamp({
+        initialTracks: [
+          {
+            metaData: {
+              artist: 'DJ Mike Llama',
+              title: "Llama Whippin' Intro",
+            },
+            url: 'https://cdn.jsdelivr.net/gh/captbaritone/webamp@43434d82cfe0e37286dbbe0666072dc3190a83bc/mp3/llama-2.91.mp3',
+            duration: 5.322286,
+          },
+        ],
+      });
+
+      if (typeof webamp.renderInto === 'function') {
+        await webamp.renderInto(mountTarget);
+      } else {
+        await webamp.renderWhenReady(mountTarget);
+      }
+      this.setWebampVisibility(true);
+
+      webamp.onClose(() => {
+        if (this.webampWindowId !== null) {
+          this.webampIgnoreWindowClose = true;
+          XPWindowManager.closeWindow(this.webampWindowId);
+        }
+
+        this.webampInstance = null;
+        this.webampWindowId = null;
+        this.webampMinimized = false;
+      });
+
+      webamp.onWillClose((cancel) => {
+        if (this.webampLoading) {
+          cancel();
+        }
+      });
+
+      webamp.onMinimize(() => {
+        if (this.webampWindowId !== null) {
+          XPWindowManager.minimizeWindow(this.webampWindowId, false);
+        }
+        this.setWebampVisibility(false);
+      });
+
+      this.webampInstance = webamp;
+    } catch (error) {
+      console.error(error);
+      if (this.webampWindowId !== null) {
+        XPWindowManager.closeWindow(this.webampWindowId);
+        this.webampWindowId = null;
+      }
+      this.createErrorBox('C:\\nUnable to load Webamp', true);
+    } finally {
+      this.webampLoading = false;
+    }
   },
 
   createErrorBox(message, withSound = false) {
