@@ -10,6 +10,24 @@ const XPWindowManager = {
     document.addEventListener('mousemove', this.handleMouseMove.bind(this));
     document.addEventListener('mouseup', this.handleMouseUp.bind(this));
     document.addEventListener('click', this.handleClickOutside.bind(this));
+    document.addEventListener('selectstart', this.handleSelectStart.bind(this));
+  },
+
+  isEditableTarget(target) {
+    if (!(target instanceof Element)) return false;
+    return Boolean(target.closest('input, textarea, [contenteditable="true"]'));
+  },
+
+  clearTextSelection() {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      selection.removeAllRanges();
+    }
+  },
+
+  handleSelectStart(e) {
+    if (this.isEditableTarget(e.target)) return;
+    e.preventDefault();
   },
 
   createWindow(options) {
@@ -294,6 +312,9 @@ const XPWindowManager = {
 
     if (e.target.classList.contains('window-btn')) return;
 
+    e.preventDefault();
+    this.clearTextSelection();
+
     this.dragState = {
       id,
       startX: e.clientX,
@@ -301,11 +322,14 @@ const XPWindowManager = {
       offsetX: e.clientX - win.x,
       offsetY: e.clientY - win.y,
     };
+
+    document.body.classList.add('xp-no-select');
   },
 
   handleMouseMove(e) {
     if (!this.dragState) return;
     e.preventDefault();
+    this.clearTextSelection();
 
     const win = this.windows.find(w => w.id === this.dragState.id);
     if (!win || win.maximized) return;
@@ -345,6 +369,8 @@ const XPWindowManager = {
     }
 
     this.dragState = null;
+    document.body.classList.remove('xp-no-select');
+    this.clearTextSelection();
   },
 
   handleClickOutside(e) {

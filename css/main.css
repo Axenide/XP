@@ -54,8 +54,19 @@ body,
   text-rendering: optimizeSpeed;
 }
 
-.xp-desktop *:not(input):not(textarea) {
+.xp-desktop *:not(input):not(textarea):not([contenteditable="true"]) {
   user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.xp-no-select,
+.xp-no-select * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
 }
 
 input,
