@@ -5,7 +5,7 @@
         "artist": "009 Sound System",
         "title": "Dreamscape"
       },
-      "url": "assets/music/base64/1.json",
+      "url": "https://raw.githubusercontent.com/Axenide/webamp-tracks/main/009%20Sound%20System%20-%20Dreamscape.mp3",
       "duration": 210.802375
     },
     {
@@ -13,7 +13,7 @@
         "artist": "Drowning Pool",
         "title": "Bodies (Official Audio)"
       },
-      "url": "assets/music/base64/2.json",
+      "url": "https://raw.githubusercontent.com/Axenide/webamp-tracks/main/Drowning%20Pool%20-%20Bodies%20(Official%20Audio).mp3",
       "duration": 201.990396
     },
     {
@@ -21,7 +21,7 @@
         "artist": "Evanescence",
         "title": "Bring Me to Life"
       },
-      "url": "assets/music/base64/3.json",
+      "url": "https://raw.githubusercontent.com/Axenide/webamp-tracks/main/Evanescence%20-%20Bring%20Me%20to%20Life.mp3",
       "duration": 237.354396
     },
     {
@@ -29,7 +29,7 @@
         "artist": "Daft Punk",
         "title": "Harder, Better, Faster, Stronger (Official Audio)"
       },
-      "url": "assets/music/base64/4.json",
+      "url": "https://raw.githubusercontent.com/Axenide/webamp-tracks/main/Daft%20Punk%20-%20Harder%2C%20Better%2C%20Faster%2C%20Stronger%20(Official%20Audio).mp3",
       "duration": 224.687896
     },
     {
@@ -37,7 +37,7 @@
         "artist": "Skrillex",
         "title": "Bangarang (Ft. Sirah) [Official Audio]"
       },
-      "url": "assets/music/base64/5.json",
+      "url": "https://raw.githubusercontent.com/Axenide/webamp-tracks/main/Skrillex%20-%20Bangarang%20(Ft.%20Sirah)%20%5BOfficial%20Audio%5D.mp3",
       "duration": 216.282271
     },
     {
@@ -45,7 +45,7 @@
         "artist": "deadmau5",
         "title": "Strobe"
       },
-      "url": "assets/music/base64/6.json",
+      "url": "https://raw.githubusercontent.com/Axenide/webamp-tracks/main/deadmau5%20-%20Strobe.mp3",
       "duration": 636.885333
     },
     {
@@ -53,7 +53,7 @@
         "artist": "30 Seconds to Mars",
         "title": "The Kill"
       },
-      "url": "assets/music/base64/7.json",
+      "url": "https://raw.githubusercontent.com/Axenide/webamp-tracks/main/30%20Seconds%20to%20Mars%20-%20The%20Kill.mp3",
       "duration": 232.060229
     }
   ]
