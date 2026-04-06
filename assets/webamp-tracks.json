@@ -1,0 +1,60 @@
+{
+  "tracks": [
+    {
+      "metaData": {
+        "artist": "009 Sound System",
+        "title": "Dreamscape"
+      },
+      "url": "assets/music/base64/1.json",
+      "duration": 210.802375
+    },
+    {
+      "metaData": {
+        "artist": "Drowning Pool",
+        "title": "Bodies (Official Audio)"
+      },
+      "url": "assets/music/base64/2.json",
+      "duration": 201.990396
+    },
+    {
+      "metaData": {
+        "artist": "Evanescence",
+        "title": "Bring Me to Life"
+      },
+      "url": "assets/music/base64/3.json",
+      "duration": 237.354396
+    },
+    {
+      "metaData": {
+        "artist": "Daft Punk",
+        "title": "Harder, Better, Faster, Stronger (Official Audio)"
+      },
+      "url": "assets/music/base64/4.json",
+      "duration": 224.687896
+    },
+    {
+      "metaData": {
+        "artist": "Skrillex",
+        "title": "Bangarang (Ft. Sirah) [Official Audio]"
+      },
+      "url": "assets/music/base64/5.json",
+      "duration": 216.282271
+    },
+    {
+      "metaData": {
+        "artist": "deadmau5",
+        "title": "Strobe"
+      },
+      "url": "assets/music/base64/6.json",
+      "duration": 636.885333
+    },
+    {
+      "metaData": {
+        "artist": "30 Seconds to Mars",
+        "title": "The Kill"
+      },
+      "url": "assets/music/base64/7.json",
+      "duration": 232.060229
+    }
+  ]
+}

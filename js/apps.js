@@ -6,6 +6,7 @@ const XPApps = {
   webampWindowId: null,
   webampIgnoreWindowClose: false,
   webampMinimized: false,
+  webampTrackObjectUrls: [],
 
   init() {
     this.registerApps();
@@ -103,6 +104,112 @@ const XPApps = {
     }
 
     this.webampMinimized = !visible;
+  },
+
+  clearWebampTrackObjectUrls() {
+    this.webampTrackObjectUrls.forEach((url) => {
+      URL.revokeObjectURL(url);
+    });
+    this.webampTrackObjectUrls = [];
+  },
+
+  decodeBase64ToUint8Array(base64Data) {
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i += 1) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  },
+
+  async resolveWebampTrackSource(track) {
+    if (typeof track?.url !== 'string') {
+      return null;
+    }
+
+    if (!track.url.startsWith('assets/music/base64/')) {
+      return { ...track };
+    }
+
+    const payloadUrl = new URL(track.url, window.location.href).href;
+    const response = await fetch(payloadUrl, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`Unable to load base64 track payload: ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const mimeType = payload?.mimeType || 'audio/mpeg';
+    const base64Data = payload?.data;
+    if (typeof base64Data !== 'string' || base64Data.length === 0) {
+      throw new Error('Invalid base64 track payload');
+    }
+
+    const bytes = this.decodeBase64ToUint8Array(base64Data);
+    const blob = new Blob([bytes], { type: mimeType });
+    const objectUrl = URL.createObjectURL(blob);
+    this.webampTrackObjectUrls.push(objectUrl);
+
+    return {
+      ...track,
+      url: objectUrl,
+      blob,
+    };
+  },
+
+  getFallbackWebampTracks() {
+    return [
+      {
+        metaData: {
+          artist: 'DJ Mike Llama',
+          title: "Llama Whippin' Intro",
+        },
+        url: 'https://cdn.jsdelivr.net/gh/captbaritone/webamp@43434d82cfe0e37286dbbe0666072dc3190a83bc/mp3/llama-2.91.mp3',
+        duration: 5.322286,
+      },
+    ];
+  },
+
+  async getWebampTracks() {
+    try {
+      this.clearWebampTrackObjectUrls();
+
+      const tracksConfigUrl = new URL('assets/webamp-tracks.json', window.location.href).href;
+      const response = await fetch(tracksConfigUrl, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`Unable to load tracks config: ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const tracks = Array.isArray(payload) ? payload : payload?.tracks;
+      if (!Array.isArray(tracks) || tracks.length === 0) {
+        throw new Error('tracks config does not contain any tracks');
+      }
+
+      const normalizedTracks = tracks.filter(track => {
+        return track && typeof track.url === 'string' && track.url.trim().length > 0;
+      });
+
+      if (normalizedTracks.length === 0) {
+        throw new Error('tracks config has no valid track URLs');
+      }
+
+      const resolvedTracks = [];
+      for (const track of normalizedTracks) {
+        const resolvedTrack = await this.resolveWebampTrackSource(track);
+        if (resolvedTrack) {
+          resolvedTracks.push(resolvedTrack);
+        }
+      }
+
+      if (resolvedTracks.length === 0) {
+        throw new Error('tracks config has no resolvable tracks');
+      }
+
+      return resolvedTracks;
+    } catch (error) {
+      console.error(error);
+      return this.getFallbackWebampTracks();
+    }
   },
 
   getWebampConstructor() {
@@ -1163,17 +1270,9 @@ const XPApps = {
       }
 
       const Webamp = await this.getWebampConstructor();
+      const initialTracks = await this.getWebampTracks();
       const webamp = new Webamp({
-        initialTracks: [
-          {
-            metaData: {
-              artist: 'DJ Mike Llama',
-              title: "Llama Whippin' Intro",
-            },
-            url: 'https://cdn.jsdelivr.net/gh/captbaritone/webamp@43434d82cfe0e37286dbbe0666072dc3190a83bc/mp3/llama-2.91.mp3',
-            duration: 5.322286,
-          },
-        ],
+        initialTracks,
       });
 
       if (typeof webamp.renderInto === 'function') {
@@ -1192,6 +1291,7 @@ const XPApps = {
         this.webampInstance = null;
         this.webampWindowId = null;
         this.webampMinimized = false;
+        this.clearWebampTrackObjectUrls();
       });
 
       webamp.onWillClose((cancel) => {
