@@ -1,0 +1,70 @@
+name: Release webview
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: linux-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-22.04
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install webkit2gtk-4.1 deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            pkg-config \
+            gcc
+
+      - name: Build linux-${{ matrix.arch }}
+        working-directory: webview
+        env:
+          CGO_ENABLED: 1
+        run: |
+          go build -trimpath -ldflags="-s -w" \
+            -o ../dist/webview-linux-${{ matrix.arch }} .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webview-linux-${{ matrix.arch }}
+          path: dist/webview-linux-${{ matrix.arch }}
+
+  release:
+    name: Create release
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/webview-linux-amd64/webview-linux-amd64
+            artifacts/webview-linux-arm64/webview-linux-arm64
