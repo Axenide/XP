@@ -1,0 +1,13 @@
+{
+  "rewrites": [
+    { "source": "/xp/css/:file", "destination": "/css/:file" },
+    { "source": "/xp/js/:file", "destination": "/js/:file" },
+    { "source": "/xp/assets/:file", "destination": "/assets/:file" },
+    { "source": "/xp/assets/:dir/:file", "destination": "/assets/:dir/:file" },
+    { "source": "/xp", "destination": "/index.html" }
+  ],
+  "redirects": [
+    { "source": "/xp/assets/windowsIcons/Empty Recycle Bin.ico", "destination": "/assets/windowsIcons/Empty Recycle Bin.ico" },
+    { "source": "/xp/assets/windowsIcons/Full Recycle Bin.ico", "destination": "/assets/windowsIcons/Full Recycle Bin.ico" }
+  ]
+}
