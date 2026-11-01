@@ -1,4 +1,4 @@
-// Cross-layer sync for the widgetweb shell. Every layer surface renders
+// Cross-layer sync for the awesomx shell. Every layer surface renders
 // its own isolated copy of this document; layers only decide WHAT SHOWS
 // WHERE (ax-* slicing). State authority is a property of the content,
 // not of a layer name: it is whichever view renders the taskbar (the
@@ -16,7 +16,7 @@
 // Outside the shell (plain browser) there is no bridge and no slicing:
 // the page behaves as before, as its own authority.
 const XPShellSync = {
-  layer: window.__widgetwebLayer || 'background',
+  layer: window.__awesomxLayer || 'background',
   lastState: null,
   authority: true,
   _ro: null,
@@ -25,7 +25,7 @@ const XPShellSync = {
   // The taskbar is visible only in the view whose slice includes it
   // (the shell's slicing CSS hides every other layer's widgets).
   computeAuthority() {
-    if (!window.widgetweb) return true;
+    if (!window.awesomx) return true;
     const bar = document.querySelector('.xp-taskbar');
     return Boolean(bar && bar.getClientRects().length > 0);
   },
@@ -60,9 +60,9 @@ const XPShellSync = {
     // authority's input regions, i.e. it landed "outside" the taskbar,
     // windows and start menu: relay it so the start menu closes, as it
     // would in a single-document page.
-    if (!this.isAuthority && window.widgetweb) {
+    if (!this.isAuthority && window.awesomx) {
       document.addEventListener('click', () => {
-        window.widgetweb.call('broadcast', 'xp-menu', { action: 'close' });
+        window.awesomx.call('broadcast', 'xp-menu', { action: 'close' });
       });
     }
 
@@ -76,7 +76,7 @@ const XPShellSync = {
   scheduleRescan() {
     clearTimeout(this._rescanTimer);
     this._rescanTimer = setTimeout(() => {
-      if (window.__widgetwebRescan) window.__widgetwebRescan();
+      if (window.__awesomxRescan) window.__awesomxRescan();
     }, 120);
   },
 
@@ -84,15 +84,15 @@ const XPShellSync = {
   // cursor mid-gesture, so a window drag grabs the whole surface and
   // hands control back to the auto scanner when it ends.
   grabInput() {
-    if (!window.widgetweb) return;
-    window.widgetweb.call('setInputRegions', [
+    if (!window.awesomx) return;
+    window.awesomx.call('setInputRegions', [
       { x: 0, y: 0, width: 99999, height: 99999 },
     ]);
   },
 
   releaseInput() {
-    if (!window.widgetweb) return;
-    window.widgetweb.call('setInputRegions', null);
+    if (!window.awesomx) return;
+    window.awesomx.call('setInputRegions', null);
   },
 
   observeWindow(el) {
@@ -100,8 +100,8 @@ const XPShellSync = {
   },
 
   publish() {
-    if (!this.isAuthority || !window.widgetweb) return;
-    window.widgetweb.call('broadcast', 'xp-windows', {
+    if (!this.isAuthority || !window.awesomx) return;
+    window.awesomx.call('broadcast', 'xp-windows', {
       windows: XPWindowManager.windows
         .filter((w) => w.showInTaskbar)
         .map((w) => ({
@@ -119,8 +119,8 @@ const XPShellSync = {
       this.dispatchRequest(payload);
       return;
     }
-    if (!window.widgetweb) return;
-    window.widgetweb.call('broadcast', 'xp-request', payload);
+    if (!window.awesomx) return;
+    window.awesomx.call('broadcast', 'xp-request', payload);
   },
 
   dispatchRequest(p) {
