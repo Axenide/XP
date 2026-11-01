@@ -32,6 +32,18 @@ body,
   cursor: var(--xpi-cursor-default);
 }
 
+/* Shell slicing: taskbar and start menu render in the top layer
+   surface, outside .xp-desktop — re-apply what they used to inherit. */
+:where(.xp-taskbar, .xp-taskbar *, .xp-start-menu, .xp-start-menu *) {
+  cursor: var(--xpi-cursor-default);
+  font-family: var(--xpi-font);
+}
+
+:where(.xp-taskbar *, .xp-start-menu *) {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 #root {
   height: 100%;
 }
@@ -563,6 +575,9 @@ textarea,
 /* Taskbar styles */
 .xp-taskbar {
   height: 30px;
+  /* Windows are siblings in the top layer now; keep the taskbar (and
+     the start menu, z-index 10000) above them. */
+  z-index: 5000;
   position: absolute;
   bottom: 0;
   right: 0;
@@ -869,6 +884,14 @@ textarea,
 }
 
 /* Start Menu */
+#menu-shield {
+  position: absolute;
+  inset: 0;
+  /* Above the taskbar (5000) and windows, below the start menu
+     (10000) and the tray balloon (12000). */
+  z-index: 9000;
+}
+
 .xp-start-menu {
   position: absolute;
   left: 0;

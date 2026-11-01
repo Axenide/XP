@@ -56,7 +56,7 @@ const XPWindowManager = {
     const zIndex = this.nextZIndex++;
 
     const windowEl = document.createElement('div');
-    windowEl.className = 'xp-window focused';
+    windowEl.className = 'xp-window focused ax-top';
     windowEl.id = `window-${id}`;
     windowEl.style.cssText = `
       position: absolute;
@@ -100,7 +100,8 @@ const XPWindowManager = {
       windowEl.style.minHeight = `${minHeight}px`;
     }
 
-    document.querySelector('.xp-desktop').appendChild(windowEl);
+    document.body.appendChild(windowEl);
+    if (window.XPShellSync) XPShellSync.observeWindow(windowEl);
 
     const winData = {
       id,
@@ -323,6 +324,7 @@ const XPWindowManager = {
       offsetY: e.clientY - win.y,
     };
 
+    if (window.XPShellSync) XPShellSync.grabInput();
     document.body.classList.add('xp-no-select');
   },
 
@@ -368,6 +370,7 @@ const XPWindowManager = {
       }
     }
 
+    if (window.XPShellSync) XPShellSync.releaseInput();
     this.dragState = null;
     document.body.classList.remove('xp-no-select');
     this.clearTextSelection();
@@ -389,6 +392,13 @@ const XPWindowManager = {
   },
 
   updateTaskbar() {
+    // Non-authority layers render from the authority's snapshots; the
+    // authority renders locally and publishes after every mutation.
+    if (window.XPShellSync && !XPShellSync.isAuthority) {
+      XPShellSync.renderTaskbar();
+      return;
+    }
+
     const taskbarApps = document.querySelector('.taskbar-apps');
     if (!taskbarApps) return;
 
@@ -416,6 +426,8 @@ const XPWindowManager = {
       });
       taskbarApps.appendChild(btn);
     });
+
+    if (window.XPShellSync) XPShellSync.publish();
   },
 };
 

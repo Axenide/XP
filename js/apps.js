@@ -42,6 +42,13 @@ const XPApps = {
   },
 
   open(appName) {
+    // Non-authority layers ask the background view (where windows live)
+    // to open the app; the request travels through the shell broadcast.
+    if (window.XPShellSync && !XPShellSync.isAuthority) {
+      XPShellSync.request({ type: 'open', app: appName });
+      return;
+    }
+
     if (appName === 'allprograms') {
       this.createErrorBox('C:\\nApplication not found', true);
       return;

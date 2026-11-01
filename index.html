@@ -11,7 +11,9 @@
   <body>
     <div class="xp-desktop">
       <div class="xp-icons" id="desktop-icons"></div>
-      <div class="xp-start-menu" id="start-menu" style="display: none">
+    </div>
+
+    <div class="xp-start-menu ax-top" id="start-menu" style="display: none">
         <header>
           <img
             class="header-img"
@@ -222,9 +224,8 @@
           </div>
         </footer>
       </div>
-    </div>
 
-    <div class="xp-taskbar">
+    <div class="xp-taskbar ax-top">
       <div class="taskbar-left">
         <div class="start-button" id="start-button">
           <img src="assets/windowsIcons/start.png" alt="Start" />
@@ -263,6 +264,13 @@
       </div>
     </div>
 
+    <!-- Invisible click-catcher shown while the start menu is open:
+         any click outside the menu (including on Wayland windows,
+         which the region pull-through would otherwise swallow) closes
+         the menu. Sits below the menu, above everything else. -->
+    <div id="menu-shield" class="ax-top" style="display: none"></div>
+
+    <script src="js/shell-sync.js"></script>
     <script src="js/window-manager.js"></script>
     <script src="js/apps.js"></script>
     <script>
@@ -367,20 +375,34 @@
       function initStartMenu() {
         const startButton = document.getElementById("start-button");
         const startMenu = document.getElementById("start-menu");
+        const shield = document.getElementById("menu-shield");
+
+        // The shield is the click-catcher that makes "click outside"
+        // work across surfaces: while the menu is open it owns the rest
+        // of the screen (below the menu itself), so clicks on other
+        // views or Wayland windows close the menu instead of getting
+        // lost in the pass-through.
+        function setStartMenu(open) {
+          startMenu.style.display = open ? "flex" : "none";
+          shield.style.display = open ? "block" : "none";
+        }
+        window.setStartMenuVisible = setStartMenu;
 
         startButton.addEventListener("click", (e) => {
           e.stopPropagation();
           const isVisible =
             window.getComputedStyle(startMenu).display !== "none";
-          startMenu.style.display = isVisible ? "none" : "flex";
+          setStartMenu(!isVisible);
         });
+
+        shield.addEventListener("click", () => setStartMenu(false));
 
         startMenu.querySelectorAll(".menu-item").forEach((item) => {
           item.addEventListener("click", () => {
             const app = item.dataset.app;
             if (app) {
               window.XPApps.open(app);
-              startMenu.style.display = "none";
+              setStartMenu(false);
             }
           });
         });
@@ -392,7 +414,7 @@
                 ? "Shutting down..."
                 : "Logging off...",
             );
-            startMenu.style.display = "none";
+            setStartMenu(false);
           });
         });
 
@@ -401,7 +423,7 @@
             !startButton.contains(e.target) &&
             !startMenu.contains(e.target)
           ) {
-            startMenu.style.display = "none";
+            setStartMenu(false);
           }
         });
       }
@@ -502,6 +524,7 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
+        XPShellSync.init();
         XPWindowManager.init();
         initDesktop();
         initStartMenu();
