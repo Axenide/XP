@@ -19,6 +19,7 @@ const XPShellSync = {
   layer: window.__awesomxLayer || 'background',
   channel: null,
   lastState: null,
+  nativeWindows: new Map(),
   authority: true,
   _ro: null,
   _rescanTimer: 0,
@@ -37,6 +38,7 @@ const XPShellSync = {
 
   init() {
     this.authority = this.computeAuthority();
+    this.lastState = { windows: [], focusedId: null };
     if (typeof BroadcastChannel === 'function') {
       this.channel = new BroadcastChannel('xp-shell-sync');
     }
@@ -49,6 +51,15 @@ const XPShellSync = {
         this.dispatchRequest(payload);
       } else if (topic === 'xp-menu') {
         if (window.setStartMenuVisible) window.setStartMenuVisible(false);
+      } else if (topic === 'xp-window-state') {
+        if (payload?.closed) this.nativeWindows.delete(payload.id);
+        else if (payload?.id) this.nativeWindows.set(payload.id, payload);
+        if (this.isAuthority) this.renderTaskbar();
+      } else if (topic === 'xp-window-action') {
+        if (!window.__awesomxWindowMode || String(payload?.id) !== String(window.__awesomxWindowId)) return;
+        if (payload.action === 'minimize') XPWindowManager.minimizeWindow(Number(payload.id));
+        else if (payload.action === 'restore') XPWindowManager.restoreWindow(Number(payload.id));
+        else if (payload.action === 'activate') window.awesomx.call('windowActivate').catch(() => {});
       }
     };
     if (this.channel) {
@@ -63,6 +74,10 @@ const XPShellSync = {
     // in every view's copy to keep them consistent.
     window.addEventListener('hyprlandWindowFocus', () => {
       if (window.setStartMenuVisible) window.setStartMenuVisible(false);
+    });
+    window.addEventListener('awesomxWindowClosed', (event) => {
+      this.nativeWindows.delete(String(event.id));
+      if (this.isAuthority) this.renderTaskbar();
     });
 
     // A click that reaches a non-authority view fell through the
@@ -119,16 +134,51 @@ const XPShellSync = {
   publish() {
     if (!this.isAuthority || (!this.channel && !window.awesomx)) return;
     this.send('xp-windows', {
-      windows: XPWindowManager.windows
+      windows: [...XPWindowManager.windows
         .filter((w) => w.showInTaskbar)
         .map((w) => ({
           id: w.id,
           title: w.title,
           icon: w.icon,
           minimized: w.minimized,
-        })),
+          focused: XPWindowManager.focusedWindowId === w.id,
+        })), ...this.nativeWindows.values()],
       focusedId: XPWindowManager.focusedWindowId,
     });
+  },
+
+  publishWindow(windowData) {
+    if (!window.__awesomxWindowMode || (!this.channel && !window.awesomx)) return;
+    this.send('xp-window-state', {
+      id: window.__awesomxWindowId,
+      title: windowData.title,
+      icon: windowData.icon,
+      minimized: windowData.minimized,
+      focused: XPWindowManager.focusedWindowId === windowData.id,
+      showInTaskbar: windowData.showInTaskbar,
+    });
+  },
+
+  addNativeWindow(spec) {
+    const id = String(spec.id);
+    this.nativeWindows.set(id, {
+      id,
+      title: spec.title,
+      icon: spec.icon,
+      minimized: false,
+      focused: false,
+      showInTaskbar: spec.showInTaskbar !== false,
+    });
+    this.renderTaskbar();
+  },
+
+  closeWindow(id) {
+    if (window.__awesomxWindowMode) {
+      this.send('xp-window-state', { id: String(id), closed: true });
+    } else {
+      this.nativeWindows.delete(String(id));
+      if (this.isAuthority) this.renderTaskbar();
+    }
   },
 
   request(payload) {
@@ -145,6 +195,12 @@ const XPShellSync = {
     if (p.type === 'open') {
       XPApps.open(p.app);
     } else if (p.type === 'taskbar') {
+      if (this.nativeWindows.has(String(p.id))) {
+        const win = this.nativeWindows.get(String(p.id));
+        const action = win.minimized ? 'restore' : win.focused ? 'minimize' : 'activate';
+        this.send('xp-window-action', { id: String(p.id), action });
+        return;
+      }
       const win = XPWindowManager.windows.find((w) => w.id === p.id);
       if (!win) return;
       if (win.minimized) XPWindowManager.restoreWindow(p.id);
@@ -155,15 +211,27 @@ const XPShellSync = {
   },
 
   renderTaskbar() {
-    const state = this.lastState;
+    const state = this.isAuthority
+      ? {
+          windows: [...XPWindowManager.windows
+            .filter((w) => w.showInTaskbar)
+            .map((w) => ({
+              id: w.id,
+              title: w.title,
+              icon: w.icon,
+              minimized: w.minimized,
+              focused: XPWindowManager.focusedWindowId === w.id,
+          })), ...[...this.nativeWindows.values()].filter((window) => window.showInTaskbar !== false)],
+          focusedId: XPWindowManager.focusedWindowId,
+        }
+      : this.lastState;
     const taskbarApps = document.querySelector('.taskbar-apps');
     if (!state || !taskbarApps) return;
 
     taskbarApps.innerHTML = '';
     state.windows.forEach((w) => {
       const btn = document.createElement('div');
-      btn.className =
-        'taskbar-app' + (w.id === state.focusedId ? ' focused' : '');
+      btn.className = 'taskbar-app' + (w.focused || w.id === state.focusedId ? ' focused' : '');
       btn.innerHTML = `
         <img src="${w.icon}" alt="${w.title}" />
         <span>${w.title}</span>

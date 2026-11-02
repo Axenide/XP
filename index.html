@@ -526,11 +526,15 @@
       document.addEventListener("DOMContentLoaded", () => {
         XPShellSync.init();
         XPWindowManager.init();
+        XPApps.init();
+        if (window.__awesomxWindowMode) {
+          XPApps.open(window.__awesomxWindowApp);
+          return;
+        }
         initDesktop();
         initStartMenu();
         initClock();
         initTrayBalloon();
-        XPApps.init();
       });
     </script>
   </body>

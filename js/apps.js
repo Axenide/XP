@@ -6,6 +6,7 @@ const XPApps = {
   webampWindowId: null,
   webampIgnoreWindowClose: false,
   webampMinimized: false,
+  pendingNativeWindow: null,
 
   init() {
     this.registerApps();
@@ -42,10 +43,26 @@ const XPApps = {
   },
 
   open(appName) {
+    if (window.__awesomxWindowMode) {
+      if (appName === 'allprograms') {
+        this.createErrorBox('C:\\nApplication not found', true);
+        return;
+      }
+      const appFactory = this.apps[appName];
+      if (appFactory) appFactory();
+      return;
+    }
+
     // Non-authority layers ask the background view (where windows live)
     // to open the app; the request travels through the shell broadcast.
     if (window.XPShellSync && !XPShellSync.isAuthority) {
       XPShellSync.request({ type: 'open', app: appName });
+      return;
+    }
+
+    const normalizedApp = appName === 'internet' ? 'ie' : appName;
+    if (window.awesomx && normalizedApp !== 'winamp') {
+      this.openNativeWindow(normalizedApp);
       return;
     }
 
@@ -62,8 +79,28 @@ const XPApps = {
     }
   },
 
+  openNativeWindow(appName) {
+    const roles = {
+      ie: 'ax-window-float',
+      minesweeper: 'ax-window-fixed',
+      mycomputer: 'ax-window',
+    };
+    this.pendingNativeWindow = {
+      id: XPWindowManager.nextId++,
+      app: appName,
+      role: roles[appName] || 'ax-window',
+    };
+    try {
+      const appFactory = this.apps[appName];
+      if (appFactory) appFactory();
+      else this.createErrorBox('C:\\nApplication not found', true);
+    } finally {
+      this.pendingNativeWindow = null;
+    }
+  },
+
   createWindow(title, icon, content, options = {}) {
-    return XPWindowManager.createWindow({
+    const windowOptions = {
       title,
       icon,
       content,
@@ -82,6 +119,25 @@ const XPApps = {
       onMinimize: options.onMinimize || null,
       onMaximize: options.onMaximize || null,
       onRestore: options.onRestore || null,
+    };
+    if (this.pendingNativeWindow && window.awesomx) {
+      const spec = {
+        ...windowOptions,
+        id: String(this.pendingNativeWindow.id),
+        app: this.pendingNativeWindow.app,
+        role: this.pendingNativeWindow.role,
+      };
+      window.awesomx.call('createWindow', spec).catch((error) => {
+        console.error(error);
+        if (window.XPShellSync) XPShellSync.closeWindow(spec.id);
+      });
+      if (window.XPShellSync) XPShellSync.addNativeWindow(spec);
+      return this.pendingNativeWindow.id;
+    }
+    return XPWindowManager.createWindow({
+      ...windowOptions,
+      windowId: window.__awesomxWindowMode ? Number(window.__awesomxWindowId) : null,
+      role: window.__awesomxWindowMode ? window.__awesomxWindowRole : 'ax-top',
     });
   },
 
@@ -267,13 +323,13 @@ const XPApps = {
         x: 180,
         y: 170,
         resizable: false,
-        maximizable: true,
+        maximizable: false,
         width: size.width,
         height: size.height,
       },
     );
 
-    this.initMinesweeperGame(windowId);
+    if (!this.pendingNativeWindow) this.initMinesweeperGame(windowId);
   },
 
   initMinesweeperGame(windowId) {
@@ -400,6 +456,10 @@ const XPApps = {
 
     function resizeWindow(newDifficulty) {
       const size = WINDOW_SIZES[newDifficulty];
+      if (window.__awesomxWindowMode) {
+        window.awesomx.call('windowSetSize', size).catch(() => {});
+        return;
+      }
       const win = document.getElementById(`window-${windowId}`);
       if (win) {
         win.style.width = size.width + 'px';

@@ -11,6 +11,28 @@ const XPWindowManager = {
     document.addEventListener('mouseup', this.handleMouseUp.bind(this));
     document.addEventListener('click', this.handleClickOutside.bind(this));
     document.addEventListener('selectstart', this.handleSelectStart.bind(this));
+    window.addEventListener('awesomxWindowConfigure', event => {
+      if (!window.__awesomxWindowMode || !this.windows.length) return;
+      const win = this.windows[0];
+      const { width, height, states } = event.detail || {};
+      if (width > 0) win.width = width;
+      if (height > 0) win.height = height;
+      win.maximized = Array.isArray(states) && states.includes(1);
+      const activated = Array.isArray(states) && states.includes(4);
+      win.element.classList.toggle('focused', activated);
+      win.element.classList.toggle('unfocused', !activated);
+      this.focusedWindowId = activated ? win.id : null;
+      win.element.classList.toggle('maximized', win.maximized);
+      const maximizeButton = win.element.querySelector('.window-btn.maximize');
+      if (maximizeButton) {
+        maximizeButton.classList.toggle('active', win.maximized);
+        maximizeButton.title = win.maximized ? 'Restore' : 'Maximize';
+      }
+      this.updateTaskbar();
+    });
+    window.addEventListener('awesomxWindowClose', () => {
+      if (window.__awesomxWindowMode && this.windows.length) this.closeWindow(this.windows[0].id, false);
+    });
   },
 
   isEditableTarget(target) {
@@ -46,24 +68,28 @@ const XPWindowManager = {
       showInTaskbar = true,
       minWidth = 220,
       minHeight = 140,
+      windowId = null,
+      role = 'ax-top',
       onClose = null,
       onMinimize = null,
       onMaximize = null,
       onRestore = null,
     } = options;
 
-    const id = this.nextId++;
+    const id = windowId === null ? this.nextId++ : Number(windowId);
+    this.nextId = Math.max(this.nextId, id + 1);
     const zIndex = this.nextZIndex++;
 
     const windowEl = document.createElement('div');
-    windowEl.className = 'xp-window focused ax-top';
+    windowEl.className = `xp-window focused ${role}`;
     windowEl.id = `window-${id}`;
+    windowEl.dataset.axWindowId = String(id);
     windowEl.style.cssText = `
       position: absolute;
-      left: ${x}px;
-      top: ${y}px;
-      width: ${width}px;
-      height: ${height}px;
+      left: ${window.__awesomxWindowMode ? 0 : x}px;
+      top: ${window.__awesomxWindowMode ? 0 : y}px;
+      width: ${window.__awesomxWindowMode ? '100vw' : `${width}px`};
+      height: ${window.__awesomxWindowMode ? '100vh' : `${height}px`};
       z-index: ${zIndex};
     `;
 
@@ -95,7 +121,7 @@ const XPWindowManager = {
 
     if (resizable) {
       windowEl.classList.add('resizable-window');
-      windowEl.style.resize = 'both';
+      if (!window.__awesomxWindowMode) windowEl.style.resize = 'both';
       windowEl.style.minWidth = `${minWidth}px`;
       windowEl.style.minHeight = `${minHeight}px`;
     }
@@ -190,11 +216,15 @@ const XPWindowManager = {
     this.updateTaskbar();
   },
 
-  closeWindow(id) {
+  closeWindow(id, notifyShell = true) {
     const winIndex = this.windows.findIndex(w => w.id === id);
     if (winIndex === -1) return;
 
     const win = this.windows[winIndex];
+    if (window.__awesomxWindowMode && notifyShell && window.awesomx) {
+      window.awesomx.call('closeWindow').catch(() => {});
+      if (window.XPShellSync) XPShellSync.closeWindow(id);
+    }
     win.element.remove();
     this.windows.splice(winIndex, 1);
 
@@ -219,6 +249,7 @@ const XPWindowManager = {
 
     win.minimized = true;
     win.element.style.display = 'none';
+    if (window.__awesomxWindowMode && window.awesomx) window.awesomx.call('windowMinimize').catch(() => {});
 
     const topWin = this.windows
       .filter(w => !w.minimized)
@@ -242,6 +273,7 @@ const XPWindowManager = {
 
     win.minimized = false;
     win.element.style.display = '';
+    if (window.__awesomxWindowMode && window.awesomx) window.awesomx.call('windowActivate').catch(() => {});
     this.focusWindow(id);
     if (win.onRestore) win.onRestore();
   },
@@ -249,6 +281,18 @@ const XPWindowManager = {
   toggleMaximize(id) {
     const win = this.windows.find(w => w.id === id);
     if (!win || !win.resizable) return;
+
+    if (window.__awesomxWindowMode) {
+      win.maximized = !win.maximized;
+      window.awesomx?.call('windowMaximize', win.maximized).catch(() => {});
+      win.element.classList.toggle('maximized', win.maximized);
+      const maximizeButton = win.element.querySelector('.window-btn.maximize');
+      if (maximizeButton) {
+        maximizeButton.classList.toggle('active', win.maximized);
+        maximizeButton.title = win.maximized ? 'Restore' : 'Maximize';
+      }
+      return;
+    }
 
     if (win.maximized) {
       win.maximized = false;
@@ -316,6 +360,11 @@ const XPWindowManager = {
     e.preventDefault();
     this.clearTextSelection();
 
+    if (window.__awesomxWindowMode) {
+      window.awesomx?.call('windowMove').catch(() => {});
+      return;
+    }
+
     this.dragState = {
       id,
       startX: e.clientX,
@@ -344,6 +393,7 @@ const XPWindowManager = {
   },
 
   handleMouseUp() {
+    if (window.__awesomxWindowMode) return;
     if (this.focusedWindowId !== null) {
       const focusedWindow = this.windows.find(
         win => win.id === this.focusedWindowId,
@@ -392,6 +442,13 @@ const XPWindowManager = {
   },
 
   updateTaskbar() {
+    if (window.__awesomxWindowMode) {
+      if (window.XPShellSync) {
+        const win = this.windows[0];
+        if (win) XPShellSync.publishWindow(win);
+      }
+      return;
+    }
     // Non-authority layers render from the authority's snapshots; the
     // authority renders locally and publishes after every mutation.
     if (window.XPShellSync && !XPShellSync.isAuthority) {
