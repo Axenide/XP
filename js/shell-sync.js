@@ -4,8 +4,8 @@
 // not of a layer name: it is whichever view renders the taskbar (the
 // anchor that hosts window state), so re-tagging the taskbar into
 // another ax-* layer moves the authority with it. That view executes
-// every state mutation; the others drive it through the bridge's
-// broadcast channel:
+// every state mutation; the others drive it through BroadcastChannel
+// (with the shell bridge as a compatibility fallback):
 //
 //   xp-windows  (authority -> others)  taskbar snapshot after any change
 //   xp-request  (others -> authority)  open app / taskbar button action
@@ -13,10 +13,11 @@
 //                                      authority's widgets: close the
 //                                      start menu in the view showing it
 //
-// Outside the shell (plain browser) there is no bridge and no slicing:
-// the page behaves as before, as its own authority.
+// Outside the shell there is one unsliced document, so it remains the
+// local authority and does not need cross-view messages.
 const XPShellSync = {
   layer: window.__awesomxLayer || 'background',
+  channel: null,
   lastState: null,
   authority: true,
   _ro: null,
@@ -36,17 +37,25 @@ const XPShellSync = {
 
   init() {
     this.authority = this.computeAuthority();
-    window.addEventListener('bridgeMessage', (e) => {
-      if (e.topic === 'xp-windows') {
-        this.lastState = e.payload;
+    if (typeof BroadcastChannel === 'function') {
+      this.channel = new BroadcastChannel('xp-shell-sync');
+    }
+    const receive = ({ topic, payload }) => {
+      if (topic === 'xp-windows') {
+        this.lastState = payload;
         if (!this.isAuthority) this.renderTaskbar();
-      } else if (e.topic === 'xp-request') {
+      } else if (topic === 'xp-request') {
         if (!this.isAuthority) return;
-        this.dispatchRequest(e.payload);
-      } else if (e.topic === 'xp-menu') {
+        this.dispatchRequest(payload);
+      } else if (topic === 'xp-menu') {
         if (window.setStartMenuVisible) window.setStartMenuVisible(false);
       }
-    });
+    };
+    if (this.channel) {
+      this.channel.addEventListener('message', (event) => receive(event.data || {}));
+    } else {
+      window.addEventListener('bridgeMessage', receive);
+    }
 
     // Clicks on regular Wayland windows never reach any shell surface
     // (they fall through), so the only signal is the shell's own
@@ -60,9 +69,9 @@ const XPShellSync = {
     // authority's input regions, i.e. it landed "outside" the taskbar,
     // windows and start menu: relay it so the start menu closes, as it
     // would in a single-document page.
-    if (!this.isAuthority && window.awesomx) {
+    if (!this.isAuthority && (this.channel || window.awesomx)) {
       document.addEventListener('click', () => {
-        window.awesomx.call('broadcast', 'xp-menu', { action: 'close' });
+        this.send('xp-menu', { action: 'close' });
       });
     }
 
@@ -78,6 +87,14 @@ const XPShellSync = {
     this._rescanTimer = setTimeout(() => {
       if (window.__awesomxRescan) window.__awesomxRescan();
     }, 120);
+  },
+
+  send(topic, payload) {
+    if (this.channel) {
+      this.channel.postMessage({ topic, payload });
+    } else if (window.awesomx) {
+      window.awesomx.call('broadcast', topic, payload);
+    }
   },
 
   // Drags own the pointer: a stale or lagging region can drop the
@@ -100,8 +117,8 @@ const XPShellSync = {
   },
 
   publish() {
-    if (!this.isAuthority || !window.awesomx) return;
-    window.awesomx.call('broadcast', 'xp-windows', {
+    if (!this.isAuthority || (!this.channel && !window.awesomx)) return;
+    this.send('xp-windows', {
       windows: XPWindowManager.windows
         .filter((w) => w.showInTaskbar)
         .map((w) => ({
@@ -119,8 +136,8 @@ const XPShellSync = {
       this.dispatchRequest(payload);
       return;
     }
-    if (!window.awesomx) return;
-    window.awesomx.call('broadcast', 'xp-request', payload);
+    if (!this.channel && !window.awesomx) return;
+    this.send('xp-request', payload);
   },
 
   dispatchRequest(p) {
