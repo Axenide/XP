@@ -4,6 +4,8 @@ const XPWindowManager = {
   nextZIndex: 1,
   focusedWindowId: null,
   dragState: null,
+  nativeStateSyncTimer: 0,
+  nativeStateSyncGeneration: 0,
 
   init() {
     document.addEventListener('mousedown', this.handleMouseDown.bind(this));
@@ -17,22 +19,91 @@ const XPWindowManager = {
       const { width, height, states } = event.detail || {};
       if (width > 0) win.width = width;
       if (height > 0) win.height = height;
-      win.maximized = Array.isArray(states) && states.includes(1);
+      const stateList = Array.isArray(states) ? states : [];
+      const fallbackState = {
+        maximized: stateList.includes(1),
+        fullscreen: stateList.includes(2),
+        tiled: stateList.some(state => state >= 5 && state <= 8),
+        floating: null,
+      };
       const activated = Array.isArray(states) && states.includes(4);
       win.element.classList.toggle('focused', activated);
       win.element.classList.toggle('unfocused', !activated);
       this.focusedWindowId = activated ? win.id : null;
-      win.element.classList.toggle('maximized', win.maximized);
-      const maximizeButton = win.element.querySelector('.window-btn.maximize');
-      if (maximizeButton) {
-        maximizeButton.classList.toggle('active', win.maximized);
-        maximizeButton.title = win.maximized ? 'Restore' : 'Maximize';
+      this.scheduleNativeStateSync(fallbackState);
+    });
+    window.addEventListener('hyprlandWindowFocus', event => {
+      if (window.__awesomxWindowMode && event.class === window.__awesomxWindowAppId) {
+        this.scheduleNativeStateSync();
       }
-      this.updateTaskbar();
     });
     window.addEventListener('awesomxWindowClose', () => {
       if (window.__awesomxWindowMode && this.windows.length) this.closeWindow(this.windows[0].id, false);
     });
+  },
+
+  applyNativeState(win, state) {
+    const floating = typeof state.floating === 'boolean' ? state.floating : null;
+    win.maximized = Boolean(state.maximized);
+    win.fullscreen = Boolean(state.fullscreen);
+    win.tiled = Boolean(state.tiled);
+    win.floating = floating;
+    win.nativeState = {
+      maximized: win.maximized,
+      fullscreen: win.fullscreen,
+      tiled: win.tiled,
+      floating: win.floating,
+    };
+    win.element.classList.toggle('maximized', win.maximized);
+    const maximizeButton = win.element.querySelector('.window-btn.maximize');
+    if (maximizeButton) {
+      maximizeButton.classList.toggle('active', win.maximized);
+      maximizeButton.title = win.maximized ? 'Restore' : 'Maximize';
+    }
+    window.dispatchEvent(new CustomEvent('awesomxWindowState', {
+      detail: { id: win.id, appId: window.__awesomxWindowAppId, ...win.nativeState },
+    }));
+    this.updateTaskbar();
+  },
+
+  scheduleNativeStateSync(fallbackState = null) {
+    const win = this.windows[0];
+    if (!window.__awesomxWindowMode || !win) return;
+    if (!window.awesomx) {
+      if (fallbackState) this.applyNativeState(win, fallbackState);
+      return;
+    }
+    clearTimeout(this.nativeStateSyncTimer);
+    const generation = ++this.nativeStateSyncGeneration;
+    const fallback = fallbackState || win.nativeState;
+    this.nativeStateSyncTimer = setTimeout(() => {
+      this.syncNativeState(generation, fallback);
+    }, 80);
+  },
+
+  async syncNativeState(generation, fallbackState) {
+    const win = this.windows[0];
+    if (!win || generation !== this.nativeStateSyncGeneration) return;
+    const appId = window.__awesomxWindowAppId;
+    if (!appId) return;
+    const clients = await window.awesomx.call('hyprlandSendCommand', 'j/clients').catch(() => null);
+    if (this.windows[0] !== win || generation !== this.nativeStateSyncGeneration) return;
+    const matchingClients = Array.isArray(clients)
+      ? clients.filter(client => client && client.class === appId)
+      : [];
+    const client = matchingClients.find(item => item.title === win.title) || matchingClients[0];
+    if (client) {
+      const mode = Number(client.fullscreen);
+      const floating = typeof client.floating === 'boolean' ? client.floating : null;
+      this.applyNativeState(win, {
+        maximized: mode === 1,
+        fullscreen: mode === 2,
+        tiled: floating === false && mode === 0,
+        floating,
+      });
+      return;
+    }
+    if (fallbackState) this.applyNativeState(win, fallbackState);
   },
 
   isEditableTarget(target) {
@@ -249,7 +320,9 @@ const XPWindowManager = {
 
     win.minimized = true;
     win.element.style.display = 'none';
-    if (window.__awesomxWindowMode && window.awesomx) window.awesomx.call('windowMinimize').catch(() => {});
+    if (window.__awesomxWindowMode && window.awesomx) {
+      window.awesomx.call('windowMinimize', win.nativeState).catch(() => {});
+    }
 
     const topWin = this.windows
       .filter(w => !w.minimized)
@@ -283,13 +356,11 @@ const XPWindowManager = {
     if (!win || !win.resizable) return;
 
     if (window.__awesomxWindowMode) {
-      win.maximized = !win.maximized;
-      window.awesomx?.call('windowMaximize', win.maximized).catch(() => {});
-      win.element.classList.toggle('maximized', win.maximized);
-      const maximizeButton = win.element.querySelector('.window-btn.maximize');
-      if (maximizeButton) {
-        maximizeButton.classList.toggle('active', win.maximized);
-        maximizeButton.title = win.maximized ? 'Restore' : 'Maximize';
+      const maximized = !win.maximized;
+      if (window.awesomx) {
+        window.awesomx.call('windowMaximize', maximized)
+          .then(() => this.scheduleNativeStateSync(win.nativeState))
+          .catch(() => {});
       }
       return;
     }

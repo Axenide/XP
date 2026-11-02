@@ -1322,6 +1322,8 @@ const XPApps = {
   },
 
   createErrorBox(message, withSound = false) {
+    if (this.pendingNativeWindow) this.pendingNativeWindow.role = 'ax-window-fixed';
+
     if (withSound) {
       try {
         const audio = new Audio('./assets/sounds/error.wav');
