@@ -4,7 +4,6 @@ const XPApps = {
   webampLoading: false,
   webampConstructorPromise: null,
   webampWindowId: null,
-  webampIgnoreWindowClose: false,
   webampMinimized: false,
   pendingNativeWindow: null,
 
@@ -142,17 +141,13 @@ const XPApps = {
   },
 
   getWebampMountTarget() {
-    const desktop = document.querySelector('.xp-desktop');
-    if (!desktop) {
-      return null;
-    }
-
     let mount = document.getElementById('webamp-host');
     if (!mount) {
       mount = document.createElement('div');
       mount.id = 'webamp-host';
-      mount.className = 'webamp-host';
-      desktop.appendChild(mount);
+      mount.className = 'webamp-host ax-top';
+      document.body.appendChild(mount);
+      window.__awesomxRescan?.();
     }
 
     return mount;
@@ -161,8 +156,11 @@ const XPApps = {
   setWebampVisibility(visible) {
     const webampRoot = document.getElementById('webamp');
     if (webampRoot) {
+      // Webamp 2.2 portals its UI to body instead of the mount target.
+      webampRoot.classList.add('ax-top');
       webampRoot.style.display = visible ? '' : 'none';
       webampRoot.style.pointerEvents = visible ? 'auto' : 'none';
+      window.__awesomxRescan?.();
     }
 
     this.webampMinimized = !visible;
@@ -1218,11 +1216,10 @@ const XPApps = {
     if (this.webampWindowId !== null) {
       XPWindowManager.restoreWindow(this.webampWindowId);
       XPWindowManager.focusWindow(this.webampWindowId);
-    }
-
-    if (this.webampInstance) {
-      this.setWebampVisibility(true);
-      return;
+      if (this.webampInstance) {
+        this.setWebampVisibility(true);
+        return;
+      }
     }
 
     if (this.webampLoading) {
@@ -1241,11 +1238,6 @@ const XPApps = {
         minimizable: true,
         maximizable: false,
         onClose: () => {
-          if (this.webampIgnoreWindowClose) {
-            this.webampIgnoreWindowClose = false;
-            return;
-          }
-
           this.setWebampVisibility(false);
 
           if (this.webampInstance) {
@@ -1266,11 +1258,13 @@ const XPApps = {
         webampWindowEl.classList.add('webamp-shell-window');
       }
 
-      const mountTarget = this.getWebampMountTarget();
-      if (!mountTarget) {
-        throw new Error('Desktop mount point not found');
+      if (this.webampInstance) {
+        this.webampInstance.reopen();
+        this.setWebampVisibility(true);
+        return;
       }
 
+      const mountTarget = this.getWebampMountTarget();
       const Webamp = await this.getWebampConstructor();
       const initialTracks = await this.getWebampTracks();
       const webamp = new Webamp({
@@ -1286,11 +1280,9 @@ const XPApps = {
 
       webamp.onClose(() => {
         if (this.webampWindowId !== null) {
-          this.webampIgnoreWindowClose = true;
           XPWindowManager.closeWindow(this.webampWindowId);
         }
 
-        this.webampInstance = null;
         this.webampWindowId = null;
         this.webampMinimized = false;
       });
