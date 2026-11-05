@@ -3,7 +3,7 @@ const { readFileSync } = require('node:fs');
 const { test } = require('node:test');
 const vm = require('node:vm');
 
-function setup() {
+function setup(userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 Epiphany/46.0') {
   const nodes = [];
   const windows = new Map();
   const instances = [];
@@ -38,7 +38,11 @@ function setup() {
     minimizeWindow() {},
   };
   class Webamp {
-    constructor() { instances.push(this); this.reopenCount = 0; }
+    constructor(options) {
+      instances.push(this);
+      this.options = options;
+      this.reopenCount = 0;
+    }
     async renderWhenReady() {
       this.root = createElement();
       this.root.id = 'webamp';
@@ -50,18 +54,47 @@ function setup() {
     close() { this.closed = true; this.closeCallback(); }
     reopen() { this.closed = false; this.reopenCount++; }
   }
-  const context = vm.createContext({ document, window: {}, console, XPWindowManager: manager });
+  const window = {
+    navigator: { userAgent },
+    XPWebampHTMLAudioMedia: class XPWebampHTMLAudioMedia {},
+  };
+  const context = vm.createContext({ document, window, console, XPWindowManager: manager });
   vm.runInContext(readFileSync(require.resolve('../js/apps.js'), 'utf8'), context);
   const apps = context.window.XPApps;
+  apps.init();
   apps.getWebampConstructor = async () => Webamp;
   apps.getWebampTracks = async () => [];
-  return { apps, document, windows, instances, manager, nodes };
+  return {
+    apps,
+    document,
+    window,
+    windows,
+    instances,
+    manager,
+    nodes,
+  };
 }
 
 test('the actual body portal gets the top-layer class', async () => {
   const { apps, document } = setup();
   await apps.createWinamp();
   assert(document.getElementById('webamp').classList.has('ax-top'));
+});
+
+test('WebKit uses direct HTML audio instead of the Web Audio backend', async () => {
+  const { apps, instances, window } = setup();
+  await apps.createWinamp();
+
+  assert.equal(instances[0].options.__customMediaClass, window.XPWebampHTMLAudioMedia);
+});
+
+test('Chromium keeps Webamp native Web Audio processing', async () => {
+  const { apps, instances } = setup(
+    'Mozilla/5.0 AppleWebKit/537.36 Chrome/132.0.0.0 Safari/537.36',
+  );
+  await apps.createWinamp();
+
+  assert.equal(instances[0].options.__customMediaClass, undefined);
 });
 
 test('closing and reopening reuses one instance and one portal', async () => {

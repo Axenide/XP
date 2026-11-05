@@ -11,6 +11,11 @@ const XPApps = {
     this.registerApps();
   },
 
+  usesDirectWebKitAudio() {
+    const userAgent = window.navigator?.userAgent || '';
+    return /AppleWebKit/i.test(userAgent) && !/(Chrome|Chromium|Edg|OPR)/i.test(userAgent);
+  },
+
   registerApps() {
     this.apps = {
       ie: () => this.createInternetExplorer(),
@@ -1267,9 +1272,13 @@ const XPApps = {
       const mountTarget = this.getWebampMountTarget();
       const Webamp = await this.getWebampConstructor();
       const initialTracks = await this.getWebampTracks();
-      const webamp = new Webamp({
+      const webampOptions = {
         initialTracks,
-      });
+      };
+      if (this.usesDirectWebKitAudio()) {
+        webampOptions.__customMediaClass = window.XPWebampHTMLAudioMedia;
+      }
+      const webamp = new Webamp(webampOptions);
 
       if (typeof webamp.renderInto === 'function') {
         await webamp.renderInto(mountTarget);
