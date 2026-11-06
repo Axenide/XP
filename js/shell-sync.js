@@ -20,6 +20,7 @@ const XPShellSync = {
   channel: null,
   lastState: null,
   nativeWindows: new Map(),
+  closedNativeWindows: new Set(),
   authority: true,
   _ro: null,
   _rescanTimer: 0,
@@ -52,8 +53,11 @@ const XPShellSync = {
       } else if (topic === 'xp-menu') {
         if (window.setStartMenuVisible) window.setStartMenuVisible(false);
       } else if (topic === 'xp-window-state') {
-        if (payload?.closed) this.nativeWindows.delete(payload.id);
-        else if (payload?.id) this.nativeWindows.set(payload.id, payload);
+        if (payload?.closed) this.markNativeWindowClosed(payload.id);
+        else if (payload?.id) {
+          const id = String(payload.id);
+          if (!this.closedNativeWindows.has(id)) this.nativeWindows.set(id, payload);
+        }
         if (this.isAuthority) this.renderTaskbar();
       } else if (topic === 'xp-window-action') {
         if (!window.__awesomxWindowMode || String(payload?.id) !== String(window.__awesomxWindowId)) return;
@@ -76,7 +80,7 @@ const XPShellSync = {
       if (window.setStartMenuVisible) window.setStartMenuVisible(false);
     });
     window.addEventListener('awesomxWindowClosed', (event) => {
-      this.nativeWindows.delete(String(event.id));
+      this.markNativeWindowClosed(event.id);
       if (this.isAuthority) this.renderTaskbar();
     });
 
@@ -149,8 +153,10 @@ const XPShellSync = {
 
   publishWindow(windowData) {
     if (!window.__awesomxWindowMode || (!this.channel && !window.awesomx)) return;
+    const id = String(window.__awesomxWindowId);
+    if (this.closedNativeWindows.has(id)) return;
     this.send('xp-window-state', {
-      id: window.__awesomxWindowId,
+      id,
       title: windowData.title,
       icon: windowData.icon,
       minimized: windowData.minimized,
@@ -161,6 +167,7 @@ const XPShellSync = {
 
   addNativeWindow(spec) {
     const id = String(spec.id);
+    this.closedNativeWindows.delete(id);
     this.nativeWindows.set(id, {
       id,
       title: spec.title,
@@ -173,12 +180,20 @@ const XPShellSync = {
   },
 
   closeWindow(id) {
+    const windowId = String(id);
+    this.markNativeWindowClosed(windowId);
     if (window.__awesomxWindowMode) {
-      this.send('xp-window-state', { id: String(id), closed: true });
+      this.send('xp-window-state', { id: windowId, closed: true });
     } else {
-      this.nativeWindows.delete(String(id));
       if (this.isAuthority) this.renderTaskbar();
     }
+  },
+
+  markNativeWindowClosed(id) {
+    if (id === undefined || id === null) return;
+    const windowId = String(id);
+    this.closedNativeWindows.add(windowId);
+    this.nativeWindows.delete(windowId);
   },
 
   request(payload) {
