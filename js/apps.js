@@ -47,7 +47,7 @@ const XPApps = {
   },
 
   open(appName) {
-    if (window.__awesomxWindowMode) {
+    if (window.__axtmlWindowMode) {
       if (appName === 'allprograms') {
         this.createErrorBox('C:\\nApplication not found', true);
         return;
@@ -65,7 +65,7 @@ const XPApps = {
     }
 
     const normalizedApp = appName === 'internet' ? 'ie' : appName;
-    if (window.awesomx && normalizedApp !== 'winamp') {
+    if (window.axtml && normalizedApp !== 'winamp') {
       this.openNativeWindow(normalizedApp);
       return;
     }
@@ -124,14 +124,14 @@ const XPApps = {
       onMaximize: options.onMaximize || null,
       onRestore: options.onRestore || null,
     };
-    if (this.pendingNativeWindow && window.awesomx) {
+    if (this.pendingNativeWindow && window.axtml) {
       const spec = {
         ...windowOptions,
         id: String(this.pendingNativeWindow.id),
         app: this.pendingNativeWindow.app,
         role: this.pendingNativeWindow.role,
       };
-      window.awesomx.call('createWindow', spec).catch((error) => {
+      window.axtml.call('createWindow', spec).catch((error) => {
         console.error(error);
         if (window.XPShellSync) XPShellSync.closeWindow(spec.id);
       });
@@ -140,8 +140,8 @@ const XPApps = {
     }
     return XPWindowManager.createWindow({
       ...windowOptions,
-      windowId: window.__awesomxWindowMode ? Number(window.__awesomxWindowId) : null,
-      role: window.__awesomxWindowMode ? window.__awesomxWindowRole : 'ax-top',
+      windowId: window.__axtmlWindowMode ? Number(window.__axtmlWindowId) : null,
+      role: window.__axtmlWindowMode ? window.__axtmlWindowRole : 'ax-top',
     });
   },
 
@@ -152,7 +152,7 @@ const XPApps = {
       mount.id = 'webamp-host';
       mount.className = 'webamp-host ax-top';
       document.body.appendChild(mount);
-      window.__awesomxRescan?.();
+      window.__axtmlRescan?.();
     }
 
     return mount;
@@ -165,7 +165,7 @@ const XPApps = {
       webampRoot.classList.add('ax-top');
       webampRoot.style.display = visible ? '' : 'none';
       webampRoot.style.pointerEvents = visible ? 'auto' : 'none';
-      window.__awesomxRescan?.();
+      window.__axtmlRescan?.();
     }
 
     this.webampMinimized = !visible;
@@ -459,8 +459,8 @@ const XPApps = {
 
     function resizeWindow(newDifficulty) {
       const size = WINDOW_SIZES[newDifficulty];
-      if (window.__awesomxWindowMode) {
-        window.awesomx.call('windowSetSize', size).catch(() => {});
+      if (window.__axtmlWindowMode) {
+        window.axtml.call('windowSetSize', size).catch(() => {});
         return;
       }
       const win = document.getElementById(`window-${windowId}`);

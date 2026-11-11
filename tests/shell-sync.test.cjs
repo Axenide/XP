@@ -43,7 +43,7 @@ test('a delayed window state cannot restore a window after its close event', () 
     }
   }
   const window = {
-    awesomx: {},
+    axtml: {},
     addEventListener(type, listener) {
       windowListeners.set(type, listener);
     },
@@ -63,7 +63,7 @@ test('a delayed window state cannot restore a window after its close event', () 
   window.XPShellSync.addNativeWindow({ id: '17', title: 'Minesweeper', icon: 'mine.png' });
   assert.equal(taskbarButtons.length, 1);
 
-  window.dispatchEvent({ type: 'awesomxWindowClosed', id: '17' });
+  window.dispatchEvent({ type: 'axtmlWindowClosed', id: '17' });
   channels[0].receive({
     topic: 'xp-window-state',
     payload: { id: '17', title: 'Minesweeper', icon: 'mine.png', showInTaskbar: true },

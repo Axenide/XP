@@ -13,8 +13,8 @@ const XPWindowManager = {
     document.addEventListener('mouseup', this.handleMouseUp.bind(this));
     document.addEventListener('click', this.handleClickOutside.bind(this));
     document.addEventListener('selectstart', this.handleSelectStart.bind(this));
-    window.addEventListener('awesomxWindowConfigure', event => {
-      if (!window.__awesomxWindowMode || !this.windows.length) return;
+    window.addEventListener('axtmlWindowConfigure', event => {
+      if (!window.__axtmlWindowMode || !this.windows.length) return;
       const win = this.windows[0];
       const { width, height, states } = event.detail || {};
       if (width > 0) win.width = width;
@@ -33,12 +33,12 @@ const XPWindowManager = {
       this.scheduleNativeStateSync(fallbackState);
     });
     window.addEventListener('hyprlandWindowFocus', event => {
-      if (window.__awesomxWindowMode && event.class === window.__awesomxWindowAppId) {
+      if (window.__axtmlWindowMode && event.class === window.__axtmlWindowAppId) {
         this.scheduleNativeStateSync();
       }
     });
-    window.addEventListener('awesomxWindowClose', () => {
-      if (window.__awesomxWindowMode && this.windows.length) this.closeWindow(this.windows[0].id, false);
+    window.addEventListener('axtmlWindowClose', () => {
+      if (window.__axtmlWindowMode && this.windows.length) this.closeWindow(this.windows[0].id, false);
     });
   },
 
@@ -60,16 +60,16 @@ const XPWindowManager = {
       maximizeButton.classList.toggle('active', win.maximized);
       maximizeButton.title = win.maximized ? 'Restore' : 'Maximize';
     }
-    window.dispatchEvent(new CustomEvent('awesomxWindowState', {
-      detail: { id: win.id, appId: window.__awesomxWindowAppId, ...win.nativeState },
+    window.dispatchEvent(new CustomEvent('axtmlWindowState', {
+      detail: { id: win.id, appId: window.__axtmlWindowAppId, ...win.nativeState },
     }));
     this.updateTaskbar();
   },
 
   scheduleNativeStateSync(fallbackState = null) {
     const win = this.windows[0];
-    if (!window.__awesomxWindowMode || !win) return;
-    if (!window.awesomx) {
+    if (!window.__axtmlWindowMode || !win) return;
+    if (!window.axtml) {
       if (fallbackState) this.applyNativeState(win, fallbackState);
       return;
     }
@@ -84,9 +84,9 @@ const XPWindowManager = {
   async syncNativeState(generation, fallbackState) {
     const win = this.windows[0];
     if (!win || generation !== this.nativeStateSyncGeneration) return;
-    const appId = window.__awesomxWindowAppId;
+    const appId = window.__axtmlWindowAppId;
     if (!appId) return;
-    const clients = await window.awesomx.call('hyprlandSendCommand', 'j/clients').catch(() => null);
+    const clients = await window.axtml.call('hyprlandSendCommand', 'j/clients').catch(() => null);
     if (this.windows[0] !== win || generation !== this.nativeStateSyncGeneration) return;
     const matchingClients = Array.isArray(clients)
       ? clients.filter(client => client && client.class === appId)
@@ -157,10 +157,10 @@ const XPWindowManager = {
     windowEl.dataset.axWindowId = String(id);
     windowEl.style.cssText = `
       position: absolute;
-      left: ${window.__awesomxWindowMode ? 0 : x}px;
-      top: ${window.__awesomxWindowMode ? 0 : y}px;
-      width: ${window.__awesomxWindowMode ? '100vw' : `${width}px`};
-      height: ${window.__awesomxWindowMode ? '100vh' : `${height}px`};
+      left: ${window.__axtmlWindowMode ? 0 : x}px;
+      top: ${window.__axtmlWindowMode ? 0 : y}px;
+      width: ${window.__axtmlWindowMode ? '100vw' : `${width}px`};
+      height: ${window.__axtmlWindowMode ? '100vh' : `${height}px`};
       z-index: ${zIndex};
     `;
 
@@ -192,7 +192,7 @@ const XPWindowManager = {
 
     if (resizable) {
       windowEl.classList.add('resizable-window');
-      if (!window.__awesomxWindowMode) windowEl.style.resize = 'both';
+      if (!window.__axtmlWindowMode) windowEl.style.resize = 'both';
       windowEl.style.minWidth = `${minWidth}px`;
       windowEl.style.minHeight = `${minHeight}px`;
     }
@@ -292,8 +292,8 @@ const XPWindowManager = {
     if (winIndex === -1) return;
 
     const win = this.windows[winIndex];
-    if (window.__awesomxWindowMode && notifyShell && window.awesomx) {
-      window.awesomx.call('closeWindow').catch(() => {});
+    if (window.__axtmlWindowMode && notifyShell && window.axtml) {
+      window.axtml.call('closeWindow').catch(() => {});
       if (window.XPShellSync) XPShellSync.closeWindow(id);
     }
     win.element.remove();
@@ -320,8 +320,8 @@ const XPWindowManager = {
 
     win.minimized = true;
     win.element.style.display = 'none';
-    if (window.__awesomxWindowMode && window.awesomx) {
-      window.awesomx.call('windowMinimize', win.nativeState).catch(() => {});
+    if (window.__axtmlWindowMode && window.axtml) {
+      window.axtml.call('windowMinimize', win.nativeState).catch(() => {});
     }
 
     const topWin = this.windows
@@ -346,7 +346,7 @@ const XPWindowManager = {
 
     win.minimized = false;
     win.element.style.display = '';
-    if (window.__awesomxWindowMode && window.awesomx) window.awesomx.call('windowActivate').catch(() => {});
+    if (window.__axtmlWindowMode && window.axtml) window.axtml.call('windowActivate').catch(() => {});
     this.focusWindow(id);
     if (win.onRestore) win.onRestore();
   },
@@ -355,10 +355,10 @@ const XPWindowManager = {
     const win = this.windows.find(w => w.id === id);
     if (!win || !win.resizable) return;
 
-    if (window.__awesomxWindowMode) {
+    if (window.__axtmlWindowMode) {
       const maximized = !win.maximized;
-      if (window.awesomx) {
-        window.awesomx.call('windowMaximize', maximized)
+      if (window.axtml) {
+        window.axtml.call('windowMaximize', maximized)
           .then(() => this.scheduleNativeStateSync(win.nativeState))
           .catch(() => {});
       }
@@ -431,8 +431,8 @@ const XPWindowManager = {
     e.preventDefault();
     this.clearTextSelection();
 
-    if (window.__awesomxWindowMode) {
-      window.awesomx?.call('windowMove').catch(() => {});
+    if (window.__axtmlWindowMode) {
+      window.axtml?.call('windowMove').catch(() => {});
       return;
     }
 
@@ -464,7 +464,7 @@ const XPWindowManager = {
   },
 
   handleMouseUp() {
-    if (window.__awesomxWindowMode) return;
+    if (window.__axtmlWindowMode) return;
     if (this.focusedWindowId !== null) {
       const focusedWindow = this.windows.find(
         win => win.id === this.focusedWindowId,
@@ -513,7 +513,7 @@ const XPWindowManager = {
   },
 
   updateTaskbar() {
-    if (window.__awesomxWindowMode) {
+    if (window.__axtmlWindowMode) {
       if (window.XPShellSync) {
         const win = this.windows[0];
         if (win) XPShellSync.publishWindow(win);

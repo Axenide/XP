@@ -1,4 +1,4 @@
-// Cross-layer sync for the awesomx shell. Every layer surface renders
+// Cross-layer sync for the AXTML shell. Every layer surface renders
 // its own isolated copy of this document; layers only decide WHAT SHOWS
 // WHERE (ax-* slicing). State authority is a property of the content,
 // not of a layer name: it is whichever view renders the taskbar (the
@@ -16,7 +16,7 @@
 // Outside the shell there is one unsliced document, so it remains the
 // local authority and does not need cross-view messages.
 const XPShellSync = {
-  layer: window.__awesomxLayer || 'background',
+  layer: window.__axtmlLayer || 'background',
   channel: null,
   lastState: null,
   nativeWindows: new Map(),
@@ -28,7 +28,7 @@ const XPShellSync = {
   // The taskbar is visible only in the view whose slice includes it
   // (the shell's slicing CSS hides every other layer's widgets).
   computeAuthority() {
-    if (!window.awesomx) return true;
+    if (!window.axtml) return true;
     const bar = document.querySelector('.xp-taskbar');
     return Boolean(bar && bar.getClientRects().length > 0);
   },
@@ -60,10 +60,10 @@ const XPShellSync = {
         }
         if (this.isAuthority) this.renderTaskbar();
       } else if (topic === 'xp-window-action') {
-        if (!window.__awesomxWindowMode || String(payload?.id) !== String(window.__awesomxWindowId)) return;
+        if (!window.__axtmlWindowMode || String(payload?.id) !== String(window.__axtmlWindowId)) return;
         if (payload.action === 'minimize') XPWindowManager.minimizeWindow(Number(payload.id));
         else if (payload.action === 'restore') XPWindowManager.restoreWindow(Number(payload.id));
-        else if (payload.action === 'activate') window.awesomx.call('windowActivate').catch(() => {});
+        else if (payload.action === 'activate') window.axtml.call('windowActivate').catch(() => {});
       }
     };
     if (this.channel) {
@@ -79,7 +79,7 @@ const XPShellSync = {
     window.addEventListener('hyprlandWindowFocus', () => {
       if (window.setStartMenuVisible) window.setStartMenuVisible(false);
     });
-    window.addEventListener('awesomxWindowClosed', (event) => {
+    window.addEventListener('axtmlWindowClosed', (event) => {
       this.markNativeWindowClosed(event.id);
       if (this.isAuthority) this.renderTaskbar();
     });
@@ -88,7 +88,7 @@ const XPShellSync = {
     // authority's input regions, i.e. it landed "outside" the taskbar,
     // windows and start menu: relay it so the start menu closes, as it
     // would in a single-document page.
-    if (!this.isAuthority && (this.channel || window.awesomx)) {
+    if (!this.isAuthority && (this.channel || window.axtml)) {
       document.addEventListener('click', () => {
         this.send('xp-menu', { action: 'close' });
       });
@@ -104,15 +104,15 @@ const XPShellSync = {
   scheduleRescan() {
     clearTimeout(this._rescanTimer);
     this._rescanTimer = setTimeout(() => {
-      if (window.__awesomxRescan) window.__awesomxRescan();
+      if (window.__axtmlRescan) window.__axtmlRescan();
     }, 120);
   },
 
   send(topic, payload) {
     if (this.channel) {
       this.channel.postMessage({ topic, payload });
-    } else if (window.awesomx) {
-      window.awesomx.call('broadcast', topic, payload);
+    } else if (window.axtml) {
+      window.axtml.call('broadcast', topic, payload);
     }
   },
 
@@ -120,15 +120,15 @@ const XPShellSync = {
   // cursor mid-gesture, so a window drag grabs the whole surface and
   // hands control back to the auto scanner when it ends.
   grabInput() {
-    if (!window.awesomx) return;
-    window.awesomx.call('setInputRegions', [
+    if (!window.axtml) return;
+    window.axtml.call('setInputRegions', [
       { x: 0, y: 0, width: 99999, height: 99999 },
     ]);
   },
 
   releaseInput() {
-    if (!window.awesomx) return;
-    window.awesomx.call('setInputRegions', null);
+    if (!window.axtml) return;
+    window.axtml.call('setInputRegions', null);
   },
 
   observeWindow(el) {
@@ -136,7 +136,7 @@ const XPShellSync = {
   },
 
   publish() {
-    if (!this.isAuthority || (!this.channel && !window.awesomx)) return;
+    if (!this.isAuthority || (!this.channel && !window.axtml)) return;
     this.send('xp-windows', {
       windows: [...XPWindowManager.windows
         .filter((w) => w.showInTaskbar)
@@ -152,8 +152,8 @@ const XPShellSync = {
   },
 
   publishWindow(windowData) {
-    if (!window.__awesomxWindowMode || (!this.channel && !window.awesomx)) return;
-    const id = String(window.__awesomxWindowId);
+    if (!window.__axtmlWindowMode || (!this.channel && !window.axtml)) return;
+    const id = String(window.__axtmlWindowId);
     if (this.closedNativeWindows.has(id)) return;
     this.send('xp-window-state', {
       id,
@@ -182,7 +182,7 @@ const XPShellSync = {
   closeWindow(id) {
     const windowId = String(id);
     this.markNativeWindowClosed(windowId);
-    if (window.__awesomxWindowMode) {
+    if (window.__axtmlWindowMode) {
       this.send('xp-window-state', { id: windowId, closed: true });
     } else {
       if (this.isAuthority) this.renderTaskbar();
@@ -201,7 +201,7 @@ const XPShellSync = {
       this.dispatchRequest(payload);
       return;
     }
-    if (!this.channel && !window.awesomx) return;
+    if (!this.channel && !window.axtml) return;
     this.send('xp-request', payload);
   },
 
