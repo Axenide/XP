@@ -156,6 +156,7 @@ const XPApps = {
   setWebampVisibility(visible) {
     const webampRoot = document.getElementById('webamp');
     if (webampRoot) {
+      this.bindWebampPointerCapture(webampRoot);
       // Webamp 2.2 portals its UI to body instead of the mount target.
       webampRoot.classList.add('ax-top');
       webampRoot.style.display = visible ? '' : 'none';
@@ -164,6 +165,23 @@ const XPApps = {
     }
 
     this.webampMinimized = !visible;
+  },
+
+  bindWebampPointerCapture(root) {
+    if (root.dataset.xpPointerCapture === 'true') return;
+    root.dataset.xpPointerCapture = 'true';
+    const activePointers = new Set();
+    root.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      if (activePointers.size === 0) window.XPShellSync?.grabInput(2);
+      activePointers.add(event.pointerId);
+    }, true);
+    const release = (event) => {
+      if (!activePointers.delete(event.pointerId) || activePointers.size !== 0) return;
+      window.XPShellSync?.releaseInput();
+    };
+    window.addEventListener('pointerup', release, true);
+    window.addEventListener('pointercancel', release, true);
   },
 
   getFallbackWebampTracks() {

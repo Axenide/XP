@@ -72,3 +72,24 @@ test('a delayed window state cannot restore a window after its close event', () 
   assert.equal(window.XPShellSync.nativeWindows.has('17'), false);
   assert.equal(taskbarButtons.length, 0);
 });
+
+test('drag input capture expands and restores the requested layer region', () => {
+  const calls = [];
+  const window = {
+    axtml: {
+      call(...args) {
+        calls.push(args);
+        return { catch() {} };
+      },
+    },
+    addEventListener() {},
+  };
+  const context = vm.createContext({ window, document: {} });
+  vm.runInContext(readFileSync(require.resolve('../js/shell-sync.js'), 'utf8'), context);
+  window.XPShellSync.grabInput();
+  window.XPShellSync.releaseInput();
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [
+    ['setInputRegions', { band: 2, rects: [{ x: 0, y: 0, width: 99999, height: 99999 }] }],
+    ['setInputRegions', null],
+  ]);
+});

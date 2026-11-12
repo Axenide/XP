@@ -7,9 +7,15 @@ function setup() {
   const nodes = [];
   const windows = new Map();
   const instances = [];
+  const windowListeners = new Map();
+  const inputCapture = [];
   const createElement = () => ({
     style: {},
+    dataset: {},
     classList: new Set(),
+    listeners: new Map(),
+    addEventListener(type, listener) { this.listeners.set(type, listener); },
+    dispatchEvent(event) { this.listeners.get(event.type)?.(event); },
     remove() { nodes.splice(nodes.indexOf(this), 1); },
   });
   const document = {
@@ -50,12 +56,20 @@ function setup() {
     close() { this.closed = true; this.closeCallback(); }
     reopen() { this.closed = false; this.reopenCount++; }
   }
-  const context = vm.createContext({ document, window: {}, console, XPWindowManager: manager });
+  const window = {
+    addEventListener(type, listener) { windowListeners.set(type, listener); },
+    dispatchEvent(event) { windowListeners.get(event.type)?.(event); },
+    XPShellSync: {
+      grabInput(band) { inputCapture.push(['grab', band]); },
+      releaseInput() { inputCapture.push(['release']); },
+    },
+  };
+  const context = vm.createContext({ document, window, console, XPWindowManager: manager });
   vm.runInContext(readFileSync(require.resolve('../js/apps.js'), 'utf8'), context);
   const apps = context.window.XPApps;
   apps.getWebampConstructor = async () => Webamp;
   apps.getWebampTracks = async () => [];
-  return { apps, document, windows, instances, manager, nodes };
+  return { apps, document, windows, instances, manager, nodes, window, inputCapture };
 }
 
 test('the actual body portal gets the top-layer class', async () => {
@@ -107,4 +121,13 @@ test('minimizing and restoring does not create another player', async () => {
   assert.equal(apps.webampWindowId, id);
   assert.equal(instances.length, 1);
   assert.equal(apps.webampInstance.root.style.display, '');
+});
+
+test('Webamp drag captures and releases the top-layer input region', async () => {
+  const { apps, document, window, inputCapture } = setup();
+  await apps.createWinamp();
+  const root = document.getElementById('webamp');
+  root.dispatchEvent({ type: 'pointerdown', button: 0, pointerId: 7 });
+  window.dispatchEvent({ type: 'pointerup', pointerId: 7 });
+  assert.deepEqual(inputCapture, [['grab', 2], ['release']]);
 });

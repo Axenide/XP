@@ -119,11 +119,12 @@ const XPShellSync = {
   // Drags own the pointer: a stale or lagging region can drop the
   // cursor mid-gesture, so a window drag grabs the whole surface and
   // hands control back to the auto scanner when it ends.
-  grabInput() {
+  grabInput(band = 2) {
     if (!window.axtml) return;
-    window.axtml.call('setInputRegions', [
-      { x: 0, y: 0, width: 99999, height: 99999 },
-    ]);
+    window.axtml.call('setInputRegions', {
+      band,
+      rects: [{ x: 0, y: 0, width: 99999, height: 99999 }],
+    });
   },
 
   releaseInput() {
