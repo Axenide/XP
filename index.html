@@ -273,6 +273,7 @@
     <script src="js/shell-sync.js"></script>
     <script src="js/window-manager.js"></script>
     <script src="js/apps.js"></script>
+    <script src="js/axctl-taskbar.js"></script>
     <script>
       const desktopIcons = [
         {
@@ -535,6 +536,7 @@
         initStartMenu();
         initClock();
         initTrayBalloon();
+        XPAxctlTaskbar.init();
       });
     </script>
   </body>

@@ -520,42 +520,11 @@ const XPWindowManager = {
       }
       return;
     }
-    // Non-authority layers render from the authority's snapshots; the
-    // authority renders locally and publishes after every mutation.
-    if (window.XPShellSync && !XPShellSync.isAuthority) {
+    if (window.XPShellSync) {
       XPShellSync.renderTaskbar();
+      if (XPShellSync.isAuthority) XPShellSync.publish();
       return;
     }
-
-    const taskbarApps = document.querySelector('.taskbar-apps');
-    if (!taskbarApps) return;
-
-    taskbarApps.innerHTML = '';
-
-    this.windows.forEach(win => {
-      if (!win.showInTaskbar) return;
-
-      const btn = document.createElement('div');
-      btn.className = `taskbar-app ${
-        this.focusedWindowId === win.id ? 'focused' : ''
-      }`;
-      btn.innerHTML = `
-        <img src="${win.icon}" alt="${win.title}" />
-        <span>${win.title}</span>
-      `;
-      btn.addEventListener('click', () => {
-        if (win.minimized) {
-          this.restoreWindow(win.id);
-        } else if (this.focusedWindowId === win.id) {
-          this.minimizeWindow(win.id);
-        } else {
-          this.focusWindow(win.id);
-        }
-      });
-      taskbarApps.appendChild(btn);
-    });
-
-    if (window.XPShellSync) XPShellSync.publish();
   },
 };
 

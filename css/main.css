@@ -675,6 +675,9 @@ textarea,
   border-radius: 2px;
   cursor: var(--xpi-cursor-pointer);
   min-width: 0;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
   box-shadow:
     inset -1px 0px rgba(0, 0, 0, 0.3),
     inset 1px 1px 1px rgba(255, 255, 255, 0.2);
@@ -686,13 +689,30 @@ textarea,
   margin-right: 4px;
 }
 
-.taskbar-app span {
+.taskbar-app span:not(.taskbar-app-count) {
   position: absolute;
   left: 27px;
   right: 8px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.taskbar-app-external .taskbar-app-title {
+  right: 24px;
+}
+
+.taskbar-app-count {
+  position: absolute;
+  right: 5px;
+  min-width: 13px;
+  padding: 1px 2px;
+  border-radius: 7px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.24);
+  font-size: 9px;
+  line-height: 11px;
+  text-align: center;
 }
 
 .taskbar-app:hover {

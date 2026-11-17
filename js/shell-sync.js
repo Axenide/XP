@@ -20,6 +20,7 @@ const XPShellSync = {
   channel: null,
   lastState: null,
   nativeWindows: new Map(),
+  externalWindows: [],
   closedNativeWindows: new Set(),
   authority: true,
   _ro: null,
@@ -39,7 +40,7 @@ const XPShellSync = {
 
   init() {
     this.authority = this.computeAuthority();
-    this.lastState = { windows: [], focusedId: null };
+    this.lastState = { windows: [], externalWindows: [], focusedId: null };
     if (typeof BroadcastChannel === 'function') {
       this.channel = new BroadcastChannel('xp-shell-sync');
     }
@@ -148,8 +149,16 @@ const XPShellSync = {
           minimized: w.minimized,
           focused: XPWindowManager.focusedWindowId === w.id,
         })), ...this.nativeWindows.values()],
+      externalWindows: this.externalWindows,
       focusedId: XPWindowManager.focusedWindowId,
     });
+  },
+
+  setExternalWindows(windows) {
+    this.externalWindows = Array.isArray(windows) ? windows : [];
+    if (!this.isAuthority) return;
+    this.renderTaskbar();
+    this.publish();
   },
 
   publishWindow(windowData) {
@@ -223,6 +232,8 @@ const XPShellSync = {
       else if (XPWindowManager.focusedWindowId === p.id)
         XPWindowManager.minimizeWindow(p.id);
       else XPWindowManager.focusWindow(p.id);
+    } else if (p.type === 'external-taskbar') {
+      window.XPAxctlTaskbar?.activateGroup(p.groupId).catch(() => {});
     }
   },
 
@@ -237,7 +248,8 @@ const XPShellSync = {
               icon: w.icon,
               minimized: w.minimized,
               focused: XPWindowManager.focusedWindowId === w.id,
-          })), ...[...this.nativeWindows.values()].filter((window) => window.showInTaskbar !== false)],
+            })), ...[...this.nativeWindows.values()].filter((window) => window.showInTaskbar !== false)],
+          externalWindows: this.externalWindows,
           focusedId: XPWindowManager.focusedWindowId,
         }
       : this.lastState;
@@ -245,7 +257,7 @@ const XPShellSync = {
     if (!state || !taskbarApps) return;
 
     taskbarApps.innerHTML = '';
-    state.windows.forEach((w) => {
+    (Array.isArray(state.windows) ? state.windows : []).forEach((w) => {
       const btn = document.createElement('div');
       btn.className = 'taskbar-app' + (w.focused || w.id === state.focusedId ? ' focused' : '');
       btn.innerHTML = `
@@ -256,6 +268,61 @@ const XPShellSync = {
         this.request({ type: 'taskbar', id: w.id }),
       );
       taskbarApps.appendChild(btn);
+    });
+
+    this.renderExternalTaskbar(taskbarApps, state.externalWindows);
+  },
+
+  renderExternalTaskbar(taskbarApps, windows) {
+    const groups = new Map();
+    (Array.isArray(windows) ? windows : []).forEach(windowData => {
+      if (!windowData?.groupId) return;
+      const group = groups.get(windowData.groupId) || {
+        id: windowData.groupId,
+        name: windowData.appName || windowData.title,
+        icon: windowData.icon,
+        windows: [],
+      };
+      group.windows.push(windowData);
+      if (windowData.focused) group.focused = true;
+      groups.set(windowData.groupId, group);
+    });
+
+    groups.forEach(group => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `taskbar-app taskbar-app-external${group.focused ? ' focused' : ''}`;
+      button.dataset.groupId = group.id;
+      const titles = group.windows.map(windowData => windowData.title).filter(Boolean);
+      button.title = [group.name, ...titles].join('\n');
+      button.setAttribute(
+        'aria-label',
+        `${group.name}${group.windows.length > 1 ? `, ${group.windows.length} windows` : ''}`,
+      );
+
+      const icon = document.createElement('img');
+      icon.src = group.icon || 'assets/windowsIcons/windows.png';
+      icon.alt = '';
+      icon.draggable = false;
+      button.appendChild(icon);
+
+      const label = document.createElement('span');
+      label.className = 'taskbar-app-title';
+      label.textContent = group.name || 'Application';
+      button.appendChild(label);
+
+      if (group.windows.length > 1) {
+        const count = document.createElement('span');
+        count.className = 'taskbar-app-count';
+        count.textContent = String(group.windows.length);
+        count.setAttribute('aria-hidden', 'true');
+        button.appendChild(count);
+      }
+
+      button.addEventListener('click', () =>
+        this.request({ type: 'external-taskbar', groupId: group.id }),
+      );
+      taskbarApps.appendChild(button);
     });
   },
 };
