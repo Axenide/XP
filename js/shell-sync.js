@@ -38,6 +38,18 @@ const XPShellSync = {
     return this.authority;
   },
 
+  handleCommand(event) {
+    if (
+      event.command !== 'start' ||
+      !this.isAuthority ||
+      !window.setStartMenuVisible
+    ) return;
+    const startMenu = document.getElementById('start-menu');
+    if (!startMenu) return;
+    const isVisible = window.getComputedStyle(startMenu).display !== 'none';
+    window.setStartMenuVisible(!isVisible);
+  },
+
   init() {
     this.authority = this.computeAuthority();
     this.lastState = { windows: [], externalWindows: [], focusedId: null };
@@ -72,6 +84,8 @@ const XPShellSync = {
     } else {
       window.addEventListener('bridgeMessage', receive);
     }
+
+    window.addEventListener('axtmlCommand', (event) => this.handleCommand(event));
 
     // Clicks on regular Wayland windows never reach any shell surface
     // (they fall through), so the only signal is the shell's own

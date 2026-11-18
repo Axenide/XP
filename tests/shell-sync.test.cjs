@@ -218,3 +218,38 @@ test('XP-managed taskbar windows keep their minimize behavior', () => {
 
   assert.equal(minimized, 1);
 });
+
+test('axtml start command toggles the menu only in the taskbar authority view', () => {
+  const listeners = new Map();
+  let menuOpen = false;
+  const window = {
+    axtml: {},
+    addEventListener(type, listener) { listeners.set(type, listener); },
+    getComputedStyle() { return { display: menuOpen ? 'flex' : 'none' }; },
+    setStartMenuVisible(open) { menuOpen = open; },
+  };
+  const document = {
+    querySelector(selector) {
+      if (selector === '.xp-taskbar') return { getClientRects: () => [{}] };
+      return null;
+    },
+    getElementById(id) { return id === 'start-menu' ? {} : null; },
+    addEventListener() {},
+  };
+  const context = vm.createContext({ document, window });
+
+  vm.runInContext(readFileSync(require.resolve('../js/shell-sync.js'), 'utf8'), context);
+  window.XPShellSync.init();
+  const receiveCommand = listeners.get('axtmlCommand');
+
+  receiveCommand({ command: 'unconfigured' });
+  assert.equal(menuOpen, false);
+  receiveCommand({ command: 'start' });
+  assert.equal(menuOpen, true);
+  receiveCommand({ command: 'start' });
+  assert.equal(menuOpen, false);
+
+  window.XPShellSync.authority = false;
+  receiveCommand({ command: 'start' });
+  assert.equal(menuOpen, false);
+});
