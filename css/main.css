@@ -628,6 +628,7 @@ textarea,
   flex: 0 0 auto;
   padding: 0 10px;
   margin-left: 10px;
+  transition: padding-left 240ms ease;
   background: linear-gradient(
     to bottom,
     #0c59b9 1%,
@@ -834,18 +835,23 @@ textarea,
 }
 
 .tray-overflow {
+  position: absolute;
+  top: 0;
+  left: 10px;
   display: flex;
-  flex: 0 0 0;
   align-items: center;
-  width: 0;
-  min-width: 0;
   height: 100%;
+  width: 0;
   overflow: hidden;
-  transition: flex-basis 240ms ease;
+  transition: width 240ms ease;
+}
+
+.taskbar-right.tray-expanded {
+  padding-left: 65px;
 }
 
 .taskbar-right.tray-expanded .tray-overflow {
-  flex-basis: 55px;
+  width: 55px;
 }
 
 .tray-overflow-icons {
@@ -946,6 +952,7 @@ textarea,
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .taskbar-right,
   .tray-overflow {
     transition: none;
   }
