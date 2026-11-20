@@ -399,9 +399,47 @@
         <div class="taskbar-apps" id="taskbar-apps"></div>
       </div>
       <div class="taskbar-right">
+        <button
+          class="tray-expand-button"
+          id="tray-expand-button"
+          type="button"
+          aria-label="Show hidden notification icons"
+          aria-controls="tray-overflow"
+          aria-expanded="false"
+          title="Show hidden notification icons"
+        ></button>
+        <div
+          class="tray-overflow"
+          id="tray-overflow"
+          aria-hidden="true"
+          inert
+        >
+          <div class="tray-overflow-icons">
+            <img
+              src="assets/windowsIcons/67(32x32).png"
+              alt="Firewall"
+              title="Firewall"
+            />
+            <img
+              src="assets/windowsIcons/394(16x16).png"
+              alt="Network"
+              title="Network"
+            />
+            <img
+              class="tray-information-icon"
+              src="assets/taskbar/tray-information.png"
+              alt="Information"
+              title="Information"
+            />
+          </div>
+        </div>
         <div class="tray-icons">
           <img src="assets/windowsIcons/690(16x16).png" alt="Volume" />
-          <img src="assets/windowsIcons/394(16x16).png" alt="Network" />
+          <img
+            src="assets/windowsIcons/msn.png"
+            alt="MSN Messenger"
+            title="MSN Messenger"
+          />
           <img
             src="assets/windowsIcons/229(16x16).png"
             alt="Security"
@@ -974,6 +1012,33 @@
         setInterval(updateClock, 1000);
       }
 
+      function initTrayOverflow() {
+        const taskbarRight = document.querySelector(".taskbar-right");
+        const overflow = document.getElementById("tray-overflow");
+        const button = document.getElementById("tray-expand-button");
+        if (!taskbarRight || !overflow || !button) return;
+
+        function setExpanded(expanded) {
+          taskbarRight.classList.toggle("tray-expanded", expanded);
+          overflow.setAttribute("aria-hidden", String(!expanded));
+          overflow.inert = !expanded;
+          button.setAttribute("aria-expanded", String(expanded));
+          button.setAttribute(
+            "aria-label",
+            `${expanded ? "Hide" : "Show"} hidden notification icons`,
+          );
+          button.title = `${expanded ? "Hide" : "Show"} hidden notification icons`;
+        }
+
+        button.addEventListener("click", () => {
+          setExpanded(button.getAttribute("aria-expanded") !== "true");
+        });
+
+        document.addEventListener("click", (event) => {
+          if (!taskbarRight.contains(event.target)) setExpanded(false);
+        });
+      }
+
       function initTrayBalloon() {
         const balloon = document.getElementById("tray-balloon");
         const closeBtn = document.getElementById("tray-balloon-close");
@@ -1062,6 +1127,7 @@
         initDesktop();
         initStartMenu();
         initClock();
+        initTrayOverflow();
         initTrayBalloon();
         XPAxctlTaskbar.init();
       });
