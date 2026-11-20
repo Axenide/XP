@@ -1132,21 +1132,39 @@ textarea,
   line-height: 13px;
 }
 
+.xp-start-menu .start-menu-flyout {
+  position: relative;
+  z-index: 21;
+  flex: 0 0 26px;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.xp-start-menu .start-menu-flyout > .menu-item {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.xp-start-menu .start-menu-flyout.is-open > .menu-item,
+.xp-start-menu .start-menu-flyout > .menu-item:focus-visible {
+  color: #fff;
+  background: #2f71cd;
+}
+
+.xp-start-menu .start-menu-flyout.is-open > .menu-item .menu-arrow,
+.xp-start-menu .start-menu-flyout > .menu-item:focus-visible .menu-arrow {
+  border-left-color: #fff;
+}
+
+.xp-start-menu .menu-right > .menu-item:nth-child(-n + 5) .menu-item-text div:first-child,
 .xp-start-menu
   .menu-right
-  .menu-item:nth-child(-n + 5)
+  > .start-menu-flyout:nth-child(-n + 5)
+  > .menu-item
   .menu-item-text
   div:first-child,
-.xp-start-menu
-  .menu-left
-  .menu-item:nth-child(-n + 2)
-  .menu-item-text
-  div:first-child,
-.xp-start-menu
-  .menu-left
-  .menu-item:last-child
-  .menu-item-text
-  div:first-child {
+.xp-start-menu .menu-left > .menu-item:nth-child(-n + 2) .menu-item-text div:first-child,
+.xp-start-menu .menu-left > .menu-item:last-child .menu-item-text div:first-child {
   font-weight: 700;
 }
 
@@ -1163,7 +1181,7 @@ textarea,
 
 .xp-start-menu .all-programs-entry {
   position: relative;
-  z-index: 2;
+  z-index: 22;
 }
 
 .xp-start-menu .menu-left .all-programs-trigger {
@@ -1215,6 +1233,11 @@ textarea,
 
 .xp-start-menu .program-submenu {
   width: 207px;
+}
+
+.xp-start-menu .start-menu-flyout-menu {
+  width: max-content;
+  min-width: 94px;
 }
 
 .xp-start-menu .program-menu-item {
@@ -1275,6 +1298,12 @@ textarea,
   top: 0;
   left: calc(100% - 2px);
   min-height: 28px;
+}
+
+.xp-start-menu .start-menu-flyout-menu {
+  top: auto;
+  bottom: 0;
+  left: 179px;
 }
 
 .xp-start-menu .program-submenu[data-program-empty="true"] {

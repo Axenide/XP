@@ -237,18 +237,35 @@
                 src="assets/windowsIcons/308(32x32).png"
                 alt=""
               />
-              <div class="menu-item-text">My Documents</div>
+              <div class="menu-item-text"><div>My Documents</div></div>
             </div>
-            <div class="menu-item strong-item" data-app="myrecent">
-              <img
-                class="menu-item-img"
-                src="assets/windowsIcons/301(32x32).png"
-                alt=""
-              />
-              <div class="menu-item-text">
-                <div>My Recent Documents</div>
-                <div class="menu-arrow"></div>
-              </div>
+            <div class="start-menu-flyout" data-start-menu-flyout="recent">
+              <button
+                class="menu-item strong-item"
+                type="button"
+                data-start-menu-flyout-trigger
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-controls="my-recent-documents-menu"
+              >
+                <img
+                  class="menu-item-img"
+                  src="assets/windowsIcons/301(32x32).png"
+                  alt=""
+                />
+                <div class="menu-item-text">
+                  <div>My Recent Documents</div>
+                  <div class="menu-arrow"></div>
+                </div>
+              </button>
+              <div
+                class="program-submenu start-menu-flyout-menu"
+                id="my-recent-documents-menu"
+                data-program-empty="true"
+                role="menu"
+                aria-label="My Recent Documents"
+                hidden
+              ><span class="program-menu-empty" role="presentation">(Empty)</span></div>
             </div>
             <div class="menu-item strong-item" data-app="mypictures">
               <img
@@ -256,7 +273,7 @@
                 src="assets/windowsIcons/307(32x32).png"
                 alt=""
               />
-              <div class="menu-item-text">My Pictures</div>
+              <div class="menu-item-text"><div>My Pictures</div></div>
             </div>
             <div class="menu-item strong-item" data-app="mymusic">
               <img
@@ -264,7 +281,7 @@
                 src="assets/windowsIcons/550(32x32).png"
                 alt=""
               />
-              <div class="menu-item-text">My Music</div>
+              <div class="menu-item-text"><div>My Music</div></div>
             </div>
             <div class="menu-item strong-item" data-app="mycomputer">
               <img
@@ -272,7 +289,7 @@
                 src="assets/windowsIcons/676(32x32).png"
                 alt=""
               />
-              <div class="menu-item-text">My Computer</div>
+              <div class="menu-item-text"><div>My Computer</div></div>
             </div>
             <div class="menu-separator"></div>
             <div class="menu-item" data-app="controlpanel">
@@ -291,15 +308,40 @@
               />
               <div class="menu-item-text">Set Program Access and Defaults</div>
             </div>
-            <div class="menu-item" data-app="connectto">
-              <img
-                class="menu-item-img"
-                src="assets/windowsIcons/309(32x32).png"
-                alt=""
-              />
-              <div class="menu-item-text">
-                <div>Connect To</div>
-                <div class="menu-arrow"></div>
+            <div class="start-menu-flyout" data-start-menu-flyout="connect">
+              <button
+                class="menu-item"
+                type="button"
+                data-start-menu-flyout-trigger
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-controls="connect-to-menu"
+              >
+                <img
+                  class="menu-item-img"
+                  src="assets/windowsIcons/309(32x32).png"
+                  alt=""
+                />
+                <div class="menu-item-text">
+                  <div>Connect To</div>
+                  <div class="menu-arrow"></div>
+                </div>
+              </button>
+              <div
+                class="program-submenu start-menu-flyout-menu"
+                id="connect-to-menu"
+                role="menu"
+                aria-label="Connect To"
+                hidden
+              >
+                <button class="program-menu-item" type="button" role="menuitem" data-app="messenger">
+                  <img src="assets/windowsIcons/159(16x16).png" alt="" />
+                  <span>MSN</span>
+                </button>
+                <button class="program-menu-item" type="button" role="menuitem" data-app="connectto">
+                  <img src="assets/windowsIcons/309(16x16).png" alt="" />
+                  <span>Show all connections</span>
+                </button>
               </div>
             </div>
             <div class="menu-item" data-app="printers">
@@ -503,6 +545,55 @@
         const shield = document.getElementById("menu-shield");
         const allProgramsTrigger = document.getElementById("all-programs-trigger");
         const programsMenu = document.getElementById("all-programs-menu");
+        const startMenuFlyouts = Array.from(
+          startMenu.querySelectorAll("[data-start-menu-flyout]"),
+        );
+
+        function getStartMenuFlyoutMenu(flyout) {
+          return flyout.querySelector(":scope > .start-menu-flyout-menu");
+        }
+
+        function getStartMenuFlyoutTrigger(flyout) {
+          return flyout.querySelector(":scope > [data-start-menu-flyout-trigger]");
+        }
+
+        function closeStartMenuFlyout(flyout) {
+          const menu = getStartMenuFlyoutMenu(flyout);
+          const trigger = getStartMenuFlyoutTrigger(flyout);
+          if (!menu) return;
+          menu.hidden = true;
+          menu.classList.remove("opens-left", "opens-up");
+          flyout.classList.remove("is-open");
+          trigger?.setAttribute("aria-expanded", "false");
+        }
+
+        function closeStartMenuFlyoutsOutside(target) {
+          startMenuFlyouts.forEach((flyout) => {
+            const menu = getStartMenuFlyoutMenu(flyout);
+            if (menu && !menu.hidden && !flyout.contains(target)) {
+              closeStartMenuFlyout(flyout);
+            }
+          });
+        }
+
+        function setStartMenuFlyoutOpen(flyout, open, focusFirst = false) {
+          const menu = getStartMenuFlyoutMenu(flyout);
+          const trigger = getStartMenuFlyoutTrigger(flyout);
+          if (!menu || !trigger) return;
+          if (!open) {
+            closeStartMenuFlyout(flyout);
+            return;
+          }
+          startMenuFlyouts
+            .filter((otherFlyout) => otherFlyout !== flyout)
+            .forEach(closeStartMenuFlyout);
+          setProgramsMenu(false);
+          menu.hidden = false;
+          flyout.classList.add("is-open");
+          trigger.setAttribute("aria-expanded", "true");
+          positionFlyout(menu, trigger);
+          if (focusFirst) getProgramItems(menu)[0]?.focus();
+        }
 
         function updateProgramCategory(category) {
           let emptyState = category.querySelector(":scope > .program-menu-empty");
@@ -614,6 +705,7 @@
             allProgramsTrigger.setAttribute("aria-expanded", "false");
             return;
           }
+          startMenuFlyouts.forEach(closeStartMenuFlyout);
           programsMenu.hidden = false;
           allProgramsTrigger.setAttribute("aria-expanded", "true");
           positionFlyout(programsMenu, allProgramsTrigger, true);
@@ -642,7 +734,10 @@
         function setStartMenu(open) {
           startMenu.style.display = open ? "flex" : "none";
           shield.style.display = open ? "block" : "none";
-          if (!open) setProgramsMenu(false);
+          if (!open) {
+            startMenuFlyouts.forEach(closeStartMenuFlyout);
+            setProgramsMenu(false);
+          }
         }
         window.setStartMenuVisible = setStartMenu;
 
@@ -657,7 +752,20 @@
 
         startMenu.addEventListener("pointerover", (event) => {
           if (!(event.target instanceof Element)) return;
+          closeStartMenuFlyoutsOutside(event.target);
           closeFoldersOutside(event.target);
+          const flyoutTrigger = event.target.closest(
+            "[data-start-menu-flyout-trigger]",
+          );
+          if (flyoutTrigger) {
+            if (!flyoutTrigger.contains(event.relatedTarget)) {
+              setStartMenuFlyoutOpen(
+                flyoutTrigger.closest("[data-start-menu-flyout]"),
+                true,
+              );
+            }
+            return;
+          }
           const trigger = event.target.closest("#all-programs-trigger");
           if (trigger) {
             if (!trigger.contains(event.relatedTarget)) setProgramsMenu(true);
@@ -679,6 +787,18 @@
 
         startMenu.addEventListener("click", (event) => {
           if (!(event.target instanceof Element)) return;
+          const flyoutTrigger = event.target.closest(
+            "[data-start-menu-flyout-trigger]",
+          );
+          if (flyoutTrigger) {
+            const flyout = flyoutTrigger.closest("[data-start-menu-flyout]");
+            const menu = getStartMenuFlyoutMenu(flyout);
+            setStartMenuFlyoutOpen(
+              flyout,
+              event.detail === 0 ? menu.hidden : true,
+            );
+            return;
+          }
           const trigger = event.target.closest("#all-programs-trigger");
           if (trigger) {
             setProgramsMenu(event.detail === 0 ? programsMenu.hidden : true);
@@ -704,6 +824,22 @@
 
         startMenu.addEventListener("keydown", (event) => {
           if (!(event.target instanceof Element)) return;
+          const flyoutTrigger = event.target.closest(
+            "[data-start-menu-flyout-trigger]",
+          );
+          if (flyoutTrigger) {
+            const flyout = flyoutTrigger.closest("[data-start-menu-flyout]");
+            const menu = getStartMenuFlyoutMenu(flyout);
+            if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+              event.preventDefault();
+              setStartMenuFlyoutOpen(flyout, true, true);
+            } else if (event.key === "ArrowUp") {
+              event.preventDefault();
+              setStartMenuFlyoutOpen(flyout, true);
+              getProgramItems(menu).at(-1)?.focus();
+            }
+            return;
+          }
           if (event.target === allProgramsTrigger) {
             if (event.key === "ArrowDown" || event.key === "ArrowRight") {
               event.preventDefault();
@@ -738,9 +874,15 @@
             event.preventDefault();
             const submenu = item.closest(".program-submenu");
             if (submenu) {
-              const folder = submenu.parentElement;
-              closeFolder(folder);
-              folder.querySelector(":scope > .program-menu-item")?.focus();
+              const flyout = submenu.closest("[data-start-menu-flyout]");
+              if (flyout) {
+                closeStartMenuFlyout(flyout);
+                getStartMenuFlyoutTrigger(flyout)?.focus();
+              } else {
+                const folder = submenu.parentElement;
+                closeFolder(folder);
+                folder.querySelector(":scope > .program-menu-item")?.focus();
+              }
             } else if (item.closest(".programs-menu")) {
               setProgramsMenu(false);
               allProgramsTrigger.focus();
@@ -764,6 +906,16 @@
             event.key !== "Escape" ||
             window.getComputedStyle(startMenu).display === "none"
           ) {
+            return;
+          }
+          const openFlyout = startMenuFlyouts.find((flyout) => {
+            const menu = getStartMenuFlyoutMenu(flyout);
+            return menu && !menu.hidden;
+          });
+          if (openFlyout) {
+            closeStartMenuFlyout(openFlyout);
+            getStartMenuFlyoutTrigger(openFlyout)?.focus();
+            event.preventDefault();
             return;
           }
           const activeFolder = document.activeElement?.closest?.(
