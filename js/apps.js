@@ -31,6 +31,10 @@ const XPApps = {
       mymusic: () => this.createErrorBox('C:\\\nApplication not found', true),
       controlpanel: () =>
         this.createErrorBox('C:\\\nApplication not found', true),
+      windowscatalog: () => this.createErrorBox('C:\\\nApplication not found', true),
+      windowsupdate: () => this.createErrorBox('C:\\\nApplication not found', true),
+      remoteassistance: () => this.createErrorBox('C:\\\nApplication not found', true),
+      moviemaker: () => this.createErrorBox('C:\\\nApplication not found', true),
       setprogramaccess: () =>
         this.createErrorBox('C:\\\nApplication not found', true),
       connectto: () => this.createErrorBox('C:\\\nApplication not found', true),
@@ -43,10 +47,6 @@ const XPApps = {
 
   open(appName) {
     if (window.__axtmlWindowMode) {
-      if (appName === 'allprograms') {
-        this.createErrorBox('C:\\nApplication not found', true);
-        return;
-      }
       const appFactory = this.apps[appName];
       if (appFactory) appFactory();
       return;
@@ -62,11 +62,6 @@ const XPApps = {
     const normalizedApp = appName === 'internet' ? 'ie' : appName;
     if (window.axtml && normalizedApp !== 'winamp') {
       this.openNativeWindow(normalizedApp);
-      return;
-    }
-
-    if (appName === 'allprograms') {
-      this.createErrorBox('C:\\nApplication not found', true);
       return;
     }
 

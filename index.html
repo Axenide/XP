@@ -97,13 +97,137 @@
             </div>
             <div class="menu-spacer"></div>
             <div class="menu-separator"></div>
-            <div class="menu-item" data-app="allprograms">
-              <span class="menu-item-allprograms-label">All Programs</span>
-              <img
-                class="menu-item-img menu-item-img-allprograms"
-                src="assets/windowsIcons/all-programs.ico"
-                alt=""
-              />
+            <div class="all-programs-entry">
+              <button
+                class="menu-item all-programs-trigger"
+                id="all-programs-trigger"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-controls="all-programs-menu"
+              >
+                <span class="menu-item-allprograms-label">All Programs</span>
+                <img
+                  class="menu-item-img menu-item-img-allprograms"
+                  src="assets/windowsIcons/all-programs.ico"
+                  alt=""
+                />
+              </button>
+              <div
+                class="programs-menu"
+                id="all-programs-menu"
+                role="menu"
+                aria-label="All Programs"
+                hidden
+              >
+                <button class="program-menu-item" type="button" role="menuitem" data-app="setprogramaccess">
+                  <img src="assets/windowsIcons/227(16x16).png" alt="" />
+                  <span>Set Program Access and Defaults</span>
+                </button>
+                <button class="program-menu-item" type="button" role="menuitem" data-app="windowscatalog">
+                  <img src="assets/windowsIcons/392(16x16).png" alt="" />
+                  <span>Windows Catalog</span>
+                </button>
+                <button class="program-menu-item" type="button" role="menuitem" data-app="windowsupdate">
+                  <img src="assets/windowsIcons/322(16x16).png" alt="" />
+                  <span>Windows Update</span>
+                </button>
+                <div class="program-menu-separator" role="separator"></div>
+                <div class="program-menu-folder" data-program-folder="accessories">
+                  <button
+                    class="program-menu-item"
+                    type="button"
+                    role="menuitem"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                    aria-controls="program-category-accessories"
+                  >
+                    <img src="assets/windowsIcons/358(16x16).png" alt="" />
+                    <span>Accessories</span>
+                    <span class="program-menu-arrow" aria-hidden="true"></span>
+                  </button>
+                  <div
+                    class="program-submenu"
+                    id="program-category-accessories"
+                    data-program-category="accessories"
+                    data-program-empty="true"
+                    role="menu"
+                    aria-label="Accessories"
+                    hidden
+                  ><span class="program-menu-empty" role="presentation">(Empty)</span></div>
+                </div>
+                <div class="program-menu-folder" data-program-folder="games">
+                  <button
+                    class="program-menu-item"
+                    type="button"
+                    role="menuitem"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                    aria-controls="program-category-games"
+                  >
+                    <img src="assets/windowsIcons/358(16x16).png" alt="" />
+                    <span>Games</span>
+                    <span class="program-menu-arrow" aria-hidden="true"></span>
+                  </button>
+                  <div
+                    class="program-submenu"
+                    id="program-category-games"
+                    data-program-category="games"
+                    data-program-empty="true"
+                    role="menu"
+                    aria-label="Games"
+                    hidden
+                  ><span class="program-menu-empty" role="presentation">(Empty)</span></div>
+                </div>
+                <div class="program-menu-folder" data-program-folder="startup">
+                  <button
+                    class="program-menu-item"
+                    type="button"
+                    role="menuitem"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                    aria-controls="program-category-startup"
+                  >
+                    <img src="assets/windowsIcons/358(16x16).png" alt="" />
+                    <span>Startup</span>
+                    <span class="program-menu-arrow" aria-hidden="true"></span>
+                  </button>
+                  <div
+                    class="program-submenu"
+                    id="program-category-startup"
+                    data-program-category="startup"
+                    data-program-empty="true"
+                    role="menu"
+                    aria-label="Startup"
+                    hidden
+                  ><span class="program-menu-empty" role="presentation">(Empty)</span></div>
+                </div>
+                <div class="program-menu-separator" role="separator"></div>
+                <button class="program-menu-item" type="button" role="menuitem" data-app="ie">
+                  <img src="assets/windowsIcons/896(16x16).png" alt="" />
+                  <span>Internet Explorer</span>
+                </button>
+                <button class="program-menu-item" type="button" role="menuitem" data-app="email">
+                  <img src="assets/windowsIcons/887(16x16).png" alt="" />
+                  <span>Outlook Express</span>
+                </button>
+                <button class="program-menu-item" type="button" role="menuitem" data-app="remoteassistance">
+                  <img src="assets/windowsIcons/357(16x16).png" alt="" />
+                  <span>Remote Assistance</span>
+                </button>
+                <button class="program-menu-item" type="button" role="menuitem" data-app="mediaplayer">
+                  <img src="assets/windowsIcons/846(16x16).png" alt="" />
+                  <span>Windows Media Player</span>
+                </button>
+                <button class="program-menu-item" type="button" role="menuitem" data-app="messenger">
+                  <img src="assets/windowsIcons/msn.png" alt="" />
+                  <span>Windows Messenger</span>
+                </button>
+                <button class="program-menu-item" type="button" role="menuitem" data-app="moviemaker">
+                  <img src="assets/windowsIcons/894(16x16).png" alt="" />
+                  <span>Windows Movie Maker</span>
+                </button>
+              </div>
             </div>
           </div>
           <div class="menu-right">
@@ -377,6 +501,138 @@
         const startButton = document.getElementById("start-button");
         const startMenu = document.getElementById("start-menu");
         const shield = document.getElementById("menu-shield");
+        const allProgramsTrigger = document.getElementById("all-programs-trigger");
+        const programsMenu = document.getElementById("all-programs-menu");
+
+        function updateProgramCategory(category) {
+          let emptyState = category.querySelector(":scope > .program-menu-empty");
+          const hasEntries = Array.from(category.children).some(
+            (child) => !child.classList.contains("program-menu-empty"),
+          );
+          category.dataset.programEmpty = String(!hasEntries);
+          if (hasEntries) {
+            emptyState?.remove();
+            return;
+          }
+          if (!emptyState) {
+            emptyState = document.createElement("span");
+            emptyState.className = "program-menu-empty";
+            emptyState.setAttribute("role", "presentation");
+            emptyState.textContent = "(Empty)";
+            category.appendChild(emptyState);
+          }
+        }
+
+        const programCategories = Array.from(
+          startMenu.querySelectorAll("[data-program-category]"),
+        );
+        programCategories.forEach(updateProgramCategory);
+        const programCategoryObserver = new MutationObserver((records) => {
+          new Set(records.map((record) => record.target)).forEach(
+            updateProgramCategory,
+          );
+        });
+        programCategories.forEach((category) => {
+          programCategoryObserver.observe(category, { childList: true });
+        });
+        startMenu.programCategoryObserver = programCategoryObserver;
+
+        function getProgramItems(menu) {
+          return Array.from(menu.querySelectorAll(".program-menu-item")).filter(
+            (item) => item.closest(".programs-menu, .program-submenu") === menu,
+          );
+        }
+
+        function closeMenuTree(menu) {
+          menu.querySelectorAll(".program-submenu").forEach((submenu) => {
+            submenu.hidden = true;
+            submenu.classList.remove("opens-left", "opens-up");
+          });
+          menu
+            .querySelectorAll('.program-menu-item[aria-expanded="true"]')
+            .forEach((item) => item.setAttribute("aria-expanded", "false"));
+        }
+
+        function closeFolder(folder) {
+          const submenu = folder.querySelector(":scope > .program-submenu");
+          if (!submenu) return;
+          closeMenuTree(submenu);
+          submenu.hidden = true;
+          submenu.classList.remove("opens-left", "opens-up");
+          folder
+            .querySelector(":scope > .program-menu-item")
+            ?.setAttribute("aria-expanded", "false");
+        }
+
+        function closeSiblingFolders(folder) {
+          const parentMenu = folder.parentElement?.closest(
+            ".programs-menu, .program-submenu",
+          );
+          if (!parentMenu) return;
+          Array.from(parentMenu.children)
+            .filter(
+              (sibling) =>
+                sibling !== folder && sibling.classList.contains("program-menu-folder"),
+            )
+            .forEach(closeFolder);
+        }
+
+        function closeFoldersOutside(target) {
+          programsMenu.querySelectorAll(".program-menu-folder").forEach((folder) => {
+            const submenu = folder.querySelector(":scope > .program-submenu");
+            if (submenu && !submenu.hidden && !folder.contains(target)) {
+              closeFolder(folder);
+            }
+          });
+        }
+
+        function positionFlyout(flyout, anchor, isRoot = false) {
+          flyout.classList.remove("opens-left", "opens-up");
+          const flyoutRect = flyout.getBoundingClientRect();
+          const anchorRect = anchor.getBoundingClientRect();
+          if (
+            flyoutRect.right > window.innerWidth - 8 &&
+            anchorRect.left > window.innerWidth - anchorRect.right
+          ) {
+            flyout.classList.add("opens-left");
+          }
+          if (isRoot) return;
+          const positionedRect = flyout.getBoundingClientRect();
+          if (
+            positionedRect.bottom > window.innerHeight - 8 &&
+            anchorRect.bottom > window.innerHeight - anchorRect.top
+          ) {
+            flyout.classList.add("opens-up");
+          }
+        }
+
+        function setProgramsMenu(open, focusFirst = false) {
+          if (!open) {
+            closeMenuTree(programsMenu);
+            programsMenu.hidden = true;
+            programsMenu.classList.remove("opens-left", "opens-up");
+            allProgramsTrigger.setAttribute("aria-expanded", "false");
+            return;
+          }
+          programsMenu.hidden = false;
+          allProgramsTrigger.setAttribute("aria-expanded", "true");
+          positionFlyout(programsMenu, allProgramsTrigger, true);
+          if (focusFirst) getProgramItems(programsMenu)[0]?.focus();
+        }
+
+        function setFolderOpen(folder, open) {
+          const submenu = folder.querySelector(":scope > .program-submenu");
+          const trigger = folder.querySelector(":scope > .program-menu-item");
+          if (!submenu || !trigger) return;
+          if (!open) {
+            closeFolder(folder);
+            return;
+          }
+          closeSiblingFolders(folder);
+          submenu.hidden = false;
+          trigger.setAttribute("aria-expanded", "true");
+          positionFlyout(submenu, trigger);
+        }
 
         // The shield is the click-catcher that makes "click outside"
         // work across surfaces: while the menu is open it owns the rest
@@ -386,6 +642,7 @@
         function setStartMenu(open) {
           startMenu.style.display = open ? "flex" : "none";
           shield.style.display = open ? "block" : "none";
+          if (!open) setProgramsMenu(false);
         }
         window.setStartMenuVisible = setStartMenu;
 
@@ -398,14 +655,97 @@
 
         shield.addEventListener("click", () => setStartMenu(false));
 
-        startMenu.querySelectorAll(".menu-item").forEach((item) => {
-          item.addEventListener("click", () => {
-            const app = item.dataset.app;
-            if (app) {
-              window.XPApps.open(app);
-              setStartMenu(false);
+        startMenu.addEventListener("pointerover", (event) => {
+          if (!(event.target instanceof Element)) return;
+          closeFoldersOutside(event.target);
+          const trigger = event.target.closest("#all-programs-trigger");
+          if (trigger) {
+            if (!trigger.contains(event.relatedTarget)) setProgramsMenu(true);
+            return;
+          }
+          const folderItem = event.target.closest(
+            ".program-menu-folder > .program-menu-item",
+          );
+          if (folderItem) {
+            if (!folderItem.contains(event.relatedTarget)) {
+              setFolderOpen(folderItem.parentElement, true);
             }
-          });
+            return;
+          }
+          if (!event.target.closest("#all-programs-menu") && !programsMenu.hidden) {
+            setProgramsMenu(false);
+          }
+        });
+
+        startMenu.addEventListener("click", (event) => {
+          if (!(event.target instanceof Element)) return;
+          const trigger = event.target.closest("#all-programs-trigger");
+          if (trigger) {
+            setProgramsMenu(event.detail === 0 ? programsMenu.hidden : true);
+            return;
+          }
+          const folderItem = event.target.closest(
+            ".program-menu-folder > .program-menu-item",
+          );
+          if (folderItem) {
+            const submenu = folderItem.parentElement.querySelector(
+              ":scope > .program-submenu",
+            );
+            setFolderOpen(folderItem.parentElement, event.detail === 0 ? submenu.hidden : true);
+            return;
+          }
+          const appItem = event.target.closest(
+            ".menu-item[data-app], .program-menu-item[data-app]",
+          );
+          if (!appItem) return;
+          window.XPApps.open(appItem.dataset.app);
+          setStartMenu(false);
+        });
+
+        startMenu.addEventListener("keydown", (event) => {
+          if (!(event.target instanceof Element)) return;
+          if (event.target === allProgramsTrigger) {
+            if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+              event.preventDefault();
+              setProgramsMenu(true, true);
+            } else if (event.key === "ArrowUp") {
+              event.preventDefault();
+              setProgramsMenu(true);
+              getProgramItems(programsMenu).at(-1)?.focus();
+            }
+            return;
+          }
+          const item = event.target.closest(".program-menu-item");
+          if (!item) return;
+          const menu = item.closest(".programs-menu, .program-submenu");
+          const items = menu ? getProgramItems(menu) : [];
+          const index = items.indexOf(item);
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            const step = event.key === "ArrowDown" ? 1 : -1;
+            items[(index + step + items.length) % items.length]?.focus();
+          } else if (event.key === "Home" || event.key === "End") {
+            event.preventDefault();
+            (event.key === "Home" ? items[0] : items.at(-1))?.focus();
+          } else if (event.key === "ArrowRight") {
+            const folder = item.closest(".program-menu-folder");
+            if (!folder) return;
+            event.preventDefault();
+            setFolderOpen(folder, true);
+            const submenu = folder.querySelector(":scope > .program-submenu");
+            getProgramItems(submenu)[0]?.focus();
+          } else if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            const submenu = item.closest(".program-submenu");
+            if (submenu) {
+              const folder = submenu.parentElement;
+              closeFolder(folder);
+              folder.querySelector(":scope > .program-menu-item")?.focus();
+            } else if (item.closest(".programs-menu")) {
+              setProgramsMenu(false);
+              allProgramsTrigger.focus();
+            }
+          }
         });
 
         startMenu.querySelectorAll(".footer-item").forEach((item) => {
@@ -417,6 +757,41 @@
             );
             setStartMenu(false);
           });
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if (
+            event.key !== "Escape" ||
+            window.getComputedStyle(startMenu).display === "none"
+          ) {
+            return;
+          }
+          const activeFolder = document.activeElement?.closest?.(
+            ".program-menu-folder",
+          );
+          const activeFolderMenu = activeFolder?.querySelector(
+            ":scope > .program-submenu",
+          );
+          if (activeFolderMenu && !activeFolderMenu.hidden) {
+            closeFolder(activeFolder);
+            activeFolder.querySelector(":scope > .program-menu-item")?.focus();
+          } else {
+            const activeSubmenu = document.activeElement?.closest?.(
+              ".program-submenu",
+            );
+            if (activeSubmenu) {
+              const folder = activeSubmenu.parentElement;
+              closeFolder(folder);
+              folder.querySelector(":scope > .program-menu-item")?.focus();
+            } else if (!programsMenu.hidden) {
+              setProgramsMenu(false);
+              allProgramsTrigger.focus();
+            } else {
+              setStartMenu(false);
+              startButton.focus();
+            }
+          }
+          event.preventDefault();
         });
 
         document.addEventListener("click", (e) => {

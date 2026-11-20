@@ -1115,6 +1115,18 @@ textarea,
   height: 34px;
 }
 
+.xp-start-menu button {
+  font: inherit;
+  color: inherit;
+}
+
+.xp-start-menu .menu-item,
+.xp-start-menu .program-menu-item {
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
 .xp-start-menu .menu-right .menu-item {
   height: 26px;
   line-height: 13px;
@@ -1149,13 +1161,19 @@ textarea,
   margin-right: 3px;
 }
 
-.xp-start-menu .menu-left .menu-item[data-app="allprograms"] {
+.xp-start-menu .all-programs-entry {
+  position: relative;
+  z-index: 2;
+}
+
+.xp-start-menu .menu-left .all-programs-trigger {
   height: 24px;
+  width: 100%;
   justify-content: center;
   align-items: center;
 }
 
-.xp-start-menu .menu-left .menu-item[data-app="allprograms"] .menu-item-allprograms-label {
+.xp-start-menu .menu-left .all-programs-trigger .menu-item-allprograms-label {
   font-weight: 400;
 }
 
@@ -1163,6 +1181,155 @@ textarea,
   width: 18px;
   height: 18px;
   margin-left: 6px;
+}
+
+.xp-start-menu .programs-menu,
+.xp-start-menu .program-submenu {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: 226px;
+  padding: 0 0 0 1px;
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 1px #72ade9,
+    2px 3px 3px rgba(0, 0, 0, 0.5);
+  color: #000;
+  font-size: 11px;
+}
+
+.xp-start-menu .programs-menu {
+  left: calc(100% - 5px);
+  bottom: 0;
+}
+
+.xp-start-menu .programs-menu[hidden],
+.xp-start-menu .program-submenu[hidden] {
+  display: none;
+}
+
+.xp-start-menu .program-menu-folder {
+  position: relative;
+}
+
+.xp-start-menu .program-submenu {
+  width: 207px;
+}
+
+.xp-start-menu .program-menu-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  height: 25px;
+  min-height: 25px;
+  padding: 0 22px 0 10px;
+  box-shadow: inset 3px 0 #4081ff;
+  cursor: var(--xpi-cursor-pointer);
+  color: #000;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.xp-start-menu .program-menu-item img {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  object-fit: contain;
+}
+
+.xp-start-menu .program-menu-item > span:nth-child(2) {
+  flex: 1;
+}
+
+.xp-start-menu .program-menu-item:hover,
+.xp-start-menu .program-menu-item:focus-visible,
+.xp-start-menu .program-menu-item[aria-expanded="true"] {
+  outline: 0;
+  background: #1b65cc;
+  color: #fff;
+}
+
+.xp-start-menu .program-menu-item:focus-visible {
+  box-shadow: inset 0 0 0 1px #fff;
+}
+
+.xp-start-menu .program-menu-arrow {
+  width: 0;
+  height: 0;
+  margin-left: auto;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid #333;
+}
+
+.xp-start-menu .program-menu-item:hover .program-menu-arrow,
+.xp-start-menu .program-menu-item:focus-visible .program-menu-arrow,
+.xp-start-menu .program-menu-item[aria-expanded="true"] .program-menu-arrow {
+  border-left-color: #fff;
+}
+
+.xp-start-menu .program-submenu {
+  top: 0;
+  left: calc(100% - 2px);
+  min-height: 28px;
+}
+
+.xp-start-menu .program-submenu[data-program-empty="true"] {
+  align-items: center;
+  justify-content: center;
+  width: 94px;
+  height: 25px;
+  min-height: 25px;
+}
+
+.xp-start-menu .program-menu-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 25px;
+  padding: 0;
+  box-shadow: inset 3px 0 #4081ff;
+  color: #000;
+}
+
+.xp-start-menu .program-submenu[data-program-empty="true"] .program-menu-empty {
+  min-height: 0;
+}
+
+.xp-start-menu .program-menu-empty[hidden] {
+  display: none;
+}
+
+.xp-start-menu .program-submenu.opens-left {
+  right: calc(100% - 2px);
+  left: auto;
+}
+
+.xp-start-menu .program-submenu.opens-up {
+  top: auto;
+  bottom: 0;
+}
+
+.xp-start-menu .programs-menu.opens-left {
+  right: calc(100% - 5px);
+  left: auto;
+}
+
+.xp-start-menu .program-menu-separator {
+  height: 2px;
+  padding: 0 5px;
+  box-shadow: inset 3px 0 #4081ff;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 
 .xp-start-menu .menu-item-img-paint {
