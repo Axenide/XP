@@ -347,6 +347,11 @@ const XPAxctlTaskbar = {
     const target = windows[focusedIndex < 0 ? 0 : (focusedIndex + 1) % windows.length];
     await this.request('Window.Focus', { id: target.id });
   },
+
+  async activateWindow(id) {
+    if (id === undefined || id === null) return;
+    await this.request('Window.Focus', { id: String(id) });
+  },
 };
 
 window.XPAxctlTaskbar = XPAxctlTaskbar;

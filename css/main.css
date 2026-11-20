@@ -663,7 +663,7 @@ textarea,
   display: flex;
   align-items: center;
   position: relative;
-  flex: 1;
+  flex: 1 1 0;
   padding: 0 8px;
   height: 22px;
   margin-top: 2px;
@@ -684,35 +684,107 @@ textarea,
 }
 
 .taskbar-app img {
+  flex: none;
   width: 15px;
   height: 15px;
   margin-right: 4px;
 }
 
-.taskbar-app span:not(.taskbar-app-count) {
-  position: absolute;
-  left: 27px;
-  right: 8px;
+.taskbar-app-title {
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.taskbar-app-external .taskbar-app-title {
-  right: 24px;
+.taskbar-app-count {
+  flex: none;
+  margin-right: 4px;
+  color: #ffcc6d;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
 }
 
-.taskbar-app-count {
+.taskbar-app-arrow {
+  flex: none;
+  margin-left: 4px;
+  color: white;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.taskbar-group-menu {
   position: absolute;
-  right: 5px;
-  min-width: 13px;
-  padding: 1px 2px;
-  border-radius: 7px;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.24);
-  font-size: 9px;
-  line-height: 11px;
-  text-align: center;
+  z-index: 1;
+  bottom: 30px;
+  max-height: min(320px, calc(100vh - 44px));
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 2px 0;
+  background: #245bd6;
+  border: 1px solid #1647a9;
+  border-top: 1px solid #e68b2c;
+  box-shadow: inset 0 1px 0 #ffc73c, 2px 4px 2px rgba(0, 0, 0, 0.5);
+}
+
+.taskbar-group-menu[hidden] {
+  display: none;
+}
+
+.taskbar-group-menu-item {
+  display: flex;
+  align-items: center;
+  width: calc(100% - 8px);
+  height: 22px;
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  padding: 0 8px;
+  gap: 4px;
+  color: white;
+  font-family: inherit;
+  font-size: 11px;
+  text-align: left;
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  cursor: var(--xpi-cursor-pointer);
+}
+
+.taskbar-group-menu-item::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -8px;
+  z-index: -1;
+  width: 8px;
+  height: 100%;
+}
+
+.taskbar-group-menu-item:hover,
+.taskbar-group-menu-item:focus-visible {
+  background: #3978ed;
+  outline: none;
+}
+
+.taskbar-group-menu-item:hover::after,
+.taskbar-group-menu-item:focus-visible::after {
+  background: #3978ed;
+}
+
+.taskbar-group-menu-item img {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+}
+
+.taskbar-group-menu-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .taskbar-app:hover {

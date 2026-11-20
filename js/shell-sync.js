@@ -23,6 +23,7 @@ const XPShellSync = {
   externalWindows: [],
   closedNativeWindows: new Set(),
   authority: true,
+  taskbarMenuSequence: 0,
   _ro: null,
   _rescanTimer: 0,
 
@@ -69,7 +70,9 @@ const XPShellSync = {
         if (payload?.closed) this.markNativeWindowClosed(payload.id);
         else if (payload?.id) {
           const id = String(payload.id);
-          if (!this.closedNativeWindows.has(id)) this.nativeWindows.set(id, payload);
+          if (!this.closedNativeWindows.has(id)) {
+            this.nativeWindows.set(id, { ...this.nativeWindows.get(id), ...payload });
+          }
         }
         if (this.isAuthority) this.renderTaskbar();
       } else if (topic === 'xp-window-action') {
@@ -84,6 +87,14 @@ const XPShellSync = {
     } else {
       window.addEventListener('bridgeMessage', receive);
     }
+
+    document.addEventListener('click', event => {
+      if (event.target instanceof Element && event.target.closest('.taskbar-app-grouped, .taskbar-group-menu')) return;
+      this.closeTaskbarGroupMenus();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') this.closeTaskbarGroupMenus();
+    });
 
     window.addEventListener('axtmlCommand', (event) => this.handleCommand(event));
 
@@ -160,6 +171,8 @@ const XPShellSync = {
           id: w.id,
           title: w.title,
           icon: w.icon,
+          groupId: w.taskbarGroup,
+          source: 'internal',
           minimized: w.minimized,
           focused: XPWindowManager.focusedWindowId === w.id,
         })), ...this.nativeWindows.values()],
@@ -183,6 +196,8 @@ const XPShellSync = {
       id,
       title: windowData.title,
       icon: windowData.icon,
+      groupId: windowData.taskbarGroup,
+      source: 'native',
       minimized: windowData.minimized,
       focused: XPWindowManager.focusedWindowId === windowData.id,
       showInTaskbar: windowData.showInTaskbar,
@@ -196,6 +211,10 @@ const XPShellSync = {
       id,
       title: spec.title,
       icon: spec.icon,
+      groupId: spec.taskbarGroup || spec.icon || spec.app || id,
+      source: 'native',
+      x: spec.x,
+      y: spec.y,
       minimized: false,
       focused: false,
       showInTaskbar: spec.showInTaskbar !== false,
@@ -246,8 +265,22 @@ const XPShellSync = {
       else if (XPWindowManager.focusedWindowId === p.id)
         XPWindowManager.minimizeWindow(p.id);
       else XPWindowManager.focusWindow(p.id);
+    } else if (p.type === 'taskbar-window') {
+      if (this.nativeWindows.has(String(p.id))) {
+        this.send('xp-window-action', {
+          id: String(p.id),
+          action: this.nativeWindows.get(String(p.id)).minimized ? 'restore' : 'activate',
+        });
+        return;
+      }
+      const win = XPWindowManager.windows.find(windowData => windowData.id === p.id);
+      if (!win) return;
+      if (win.minimized) XPWindowManager.restoreWindow(p.id);
+      else XPWindowManager.focusWindow(p.id);
     } else if (p.type === 'external-taskbar') {
       window.XPAxctlTaskbar?.activateGroup(p.groupId).catch(() => {});
+    } else if (p.type === 'external-window') {
+      window.XPAxctlTaskbar?.activateWindow(p.id).catch(() => {});
     }
   },
 
@@ -260,6 +293,8 @@ const XPShellSync = {
               id: w.id,
               title: w.title,
               icon: w.icon,
+              groupId: w.taskbarGroup,
+              source: 'internal',
               minimized: w.minimized,
               focused: XPWindowManager.focusedWindowId === w.id,
             })), ...[...this.nativeWindows.values()].filter((window) => window.showInTaskbar !== false)],
@@ -270,74 +305,163 @@ const XPShellSync = {
     const taskbarApps = document.querySelector('.taskbar-apps');
     if (!state || !taskbarApps) return;
 
+    this.closeTaskbarGroupMenus();
+    document.querySelectorAll('.taskbar-group-menu').forEach(menu => menu.remove());
     taskbarApps.innerHTML = '';
-    (Array.isArray(state.windows) ? state.windows : []).forEach((w) => {
-      const btn = document.createElement('div');
-      btn.className = 'taskbar-app' + (w.focused || w.id === state.focusedId ? ' focused' : '');
-      btn.innerHTML = `
-        <img src="${w.icon}" alt="${w.title}" />
-        <span>${w.title}</span>
-      `;
-      btn.addEventListener('click', () =>
-        this.request({ type: 'taskbar', id: w.id }),
-      );
-      taskbarApps.appendChild(btn);
-    });
-
-    this.renderExternalTaskbar(taskbarApps, state.externalWindows);
-  },
-
-  renderExternalTaskbar(taskbarApps, windows) {
     const groups = new Map();
-    (Array.isArray(windows) ? windows : []).forEach(windowData => {
-      if (!windowData?.groupId) return;
-      const group = groups.get(windowData.groupId) || {
-        id: windowData.groupId,
-        name: windowData.appName || windowData.title,
+    const addWindow = (windowData, source) => {
+      if (!windowData || windowData.id === undefined) return;
+      const groupId = String(windowData.groupId || `window:${source}:${windowData.id}`);
+      const key = `${source}:${groupId}`;
+      const group = groups.get(key) || {
+        key,
+        id: groupId,
+        source,
+        name: windowData.appName || windowData.title || 'Application',
         icon: windowData.icon,
         windows: [],
       };
-      group.windows.push(windowData);
-      if (windowData.focused) group.focused = true;
-      groups.set(windowData.groupId, group);
+      group.windows.push({ ...windowData, source });
+      if (windowData.focused || windowData.id === state.focusedId) group.focused = true;
+      groups.set(key, group);
+    };
+
+    (Array.isArray(state.windows) ? state.windows : []).forEach(windowData => {
+      addWindow(windowData, windowData.source || 'internal');
+    });
+    (Array.isArray(state.externalWindows) ? state.externalWindows : []).forEach(windowData => {
+      if (windowData?.groupId) addWindow(windowData, 'external');
     });
 
-    groups.forEach(group => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = `taskbar-app taskbar-app-external${group.focused ? ' focused' : ''}`;
-      button.dataset.groupId = group.id;
-      const titles = group.windows.map(windowData => windowData.title).filter(Boolean);
-      button.title = [group.name, ...titles].join('\n');
-      button.setAttribute(
-        'aria-label',
-        `${group.name}${group.windows.length > 1 ? `, ${group.windows.length} windows` : ''}`,
-      );
+    groups.forEach(group => this.renderTaskbarGroup(taskbarApps, group));
+  },
+
+  renderTaskbarGroup(taskbarApps, group) {
+    const grouped = group.windows.length > 1;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `taskbar-app${group.focused ? ' focused' : ''}${grouped ? ' taskbar-app-grouped' : ''}`;
+    button.dataset.groupId = group.id;
+    button.dataset.windowFocused = String(Boolean(group.focused));
+    const titles = group.windows.map(windowData => windowData.title).filter(Boolean);
+    button.title = [group.name, ...titles].join('\n');
+    button.setAttribute(
+      'aria-label',
+      `${group.name}${grouped ? `, ${group.windows.length} windows` : ''}`,
+    );
+
+    const icon = document.createElement('img');
+    icon.src = group.icon || 'assets/windowsIcons/windows.png';
+    icon.alt = '';
+    icon.draggable = false;
+    button.appendChild(icon);
+
+    if (grouped) {
+      const count = document.createElement('span');
+      count.className = 'taskbar-app-count';
+      count.textContent = String(group.windows.length);
+      count.setAttribute('aria-hidden', 'true');
+      button.appendChild(count);
+    }
+
+    const label = document.createElement('span');
+    label.className = 'taskbar-app-title';
+    label.textContent = group.name || 'Application';
+    button.appendChild(label);
+
+    let menu = null;
+    if (grouped) {
+      const arrow = document.createElement('span');
+      arrow.className = 'taskbar-app-arrow';
+      arrow.textContent = '▾';
+      arrow.setAttribute('aria-hidden', 'true');
+      button.appendChild(arrow);
+      button.setAttribute('aria-haspopup', 'menu');
+      button.setAttribute('aria-expanded', 'false');
+      menu = this.createTaskbarGroupMenu(group);
+      button.setAttribute('aria-controls', menu.id);
+    }
+
+    button.addEventListener('click', () => {
+      if (grouped) {
+        this.toggleTaskbarGroupMenu(button, menu);
+      } else {
+        this.activateTaskbarWindow(group.windows[0], group);
+      }
+    });
+    taskbarApps.appendChild(button);
+    if (menu) document.querySelector('.xp-taskbar')?.appendChild(menu);
+  },
+
+  createTaskbarGroupMenu(group) {
+    const menu = document.createElement('div');
+    menu.className = 'taskbar-group-menu';
+    menu.id = `taskbar-group-menu-${++this.taskbarMenuSequence}`;
+    menu.setAttribute('role', 'menu');
+    menu.hidden = true;
+
+    group.windows.forEach(windowData => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'taskbar-group-menu-item';
+      item.setAttribute('role', 'menuitem');
+      item.title = windowData.title || group.name;
 
       const icon = document.createElement('img');
-      icon.src = group.icon || 'assets/windowsIcons/windows.png';
+      icon.src = windowData.icon || group.icon || 'assets/windowsIcons/windows.png';
       icon.alt = '';
       icon.draggable = false;
-      button.appendChild(icon);
+      item.appendChild(icon);
 
-      const label = document.createElement('span');
-      label.className = 'taskbar-app-title';
-      label.textContent = group.name || 'Application';
-      button.appendChild(label);
+      const title = document.createElement('span');
+      title.textContent = windowData.title || group.name || 'Application';
+      item.appendChild(title);
 
-      if (group.windows.length > 1) {
-        const count = document.createElement('span');
-        count.className = 'taskbar-app-count';
-        count.textContent = String(group.windows.length);
-        count.setAttribute('aria-hidden', 'true');
-        button.appendChild(count);
-      }
-
-      button.addEventListener('click', () =>
-        this.request({ type: 'external-taskbar', groupId: group.id }),
-      );
-      taskbarApps.appendChild(button);
+      item.addEventListener('click', () => {
+        this.closeTaskbarGroupMenus();
+        this.activateTaskbarWindow(windowData, group);
+      });
+      menu.appendChild(item);
     });
+
+    return menu;
+  },
+
+  toggleTaskbarGroupMenu(button, menu) {
+    const wasOpen = !menu.hidden;
+    this.closeTaskbarGroupMenus();
+    if (wasOpen) return;
+
+    const taskbar = document.querySelector('.xp-taskbar');
+    if (!taskbar) return;
+    const barRect = taskbar.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    menu.style.width = `${button.offsetWidth + 10}px`;
+    menu.hidden = false;
+    const left = Math.max(0, Math.min(buttonRect.left - barRect.left, barRect.width - menu.offsetWidth));
+    menu.style.left = `${left}px`;
+    button.classList.add('focused');
+    button.setAttribute('aria-expanded', 'true');
+  },
+
+  closeTaskbarGroupMenus() {
+    document.querySelectorAll('.taskbar-group-menu').forEach(menu => {
+      menu.hidden = true;
+    });
+    document.querySelectorAll('.taskbar-app-grouped[aria-expanded="true"]').forEach(button => {
+      button.setAttribute('aria-expanded', 'false');
+      if (button.dataset.windowFocused !== 'true') button.classList.remove('focused');
+    });
+  },
+
+  activateTaskbarWindow(windowData, group) {
+    if (windowData.source === 'external') {
+      this.request({ type: 'external-window', id: windowData.id });
+    } else if (group.windows.length > 1) {
+      this.request({ type: 'taskbar-window', id: windowData.id });
+    } else {
+      this.request({ type: 'taskbar', id: windowData.id });
+    }
   },
 };
 

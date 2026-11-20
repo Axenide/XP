@@ -99,19 +99,29 @@ const XPApps = {
   },
 
   createWindow(title, icon, content, options = {}) {
+    const taskbarGroup = options.taskbarGroup || icon;
+    const width = options.width || 660;
+    const height = options.height || 500;
+    const position = this.getTaskbarGroupWindowPosition(taskbarGroup, {
+      x: options.x || 100,
+      y: options.y || 50,
+      width,
+      height,
+    });
     const windowOptions = {
       title,
       icon,
       content,
-      width: options.width || 660,
-      height: options.height || 500,
-      x: options.x || 100,
-      y: options.y || 50,
+      width,
+      height,
+      x: position.x,
+      y: position.y,
       resizable: options.resizable !== false,
       minimizable: options.minimizable !== false,
       maximizable: options.maximizable !== false,
       closable: options.closable !== false,
       showInTaskbar: options.showInTaskbar !== false,
+      taskbarGroup,
       minWidth: options.minWidth || 220,
       minHeight: options.minHeight || 140,
       onClose: options.onClose || null,
@@ -138,6 +148,28 @@ const XPApps = {
       windowId: window.__axtmlWindowMode ? Number(window.__axtmlWindowId) : null,
       role: window.__axtmlWindowMode ? window.__axtmlWindowRole : 'ax-top',
     });
+  },
+
+  getTaskbarGroupWindowPosition(taskbarGroup, base) {
+    const windows = [
+      ...(window.XPWindowManager?.windows || []),
+      ...(window.XPShellSync?.nativeWindows?.values?.() || []),
+    ].filter(windowData => {
+      const groupId = windowData.taskbarGroup ?? windowData.groupId;
+      return String(groupId) === String(taskbarGroup);
+    }).sort((a, b) => Number(a.id) - Number(b.id));
+    const previous = windows[windows.length - 1];
+    if (!previous) return { x: base.x, y: base.y };
+
+    const step = 22;
+    const x = (previous.originalX ?? previous.x ?? base.x) + step;
+    const y = (previous.originalY ?? previous.y ?? base.y) + step;
+    const taskbarHeight = document.querySelector('.xp-taskbar')?.offsetHeight || 30;
+    const workAreaBottom = window.innerHeight - taskbarHeight;
+    if (x + base.width > window.innerWidth || y + base.height > workAreaBottom) {
+      return { x: step, y: step };
+    }
+    return { x, y };
   },
 
   getWebampMountTarget() {
@@ -280,6 +312,7 @@ const XPApps = {
       {
         x: 270,
         y: 60,
+        taskbarGroup: 'notepad',
       },
     );
   },
@@ -1055,19 +1088,21 @@ const XPApps = {
       </div>
     `;
 
-    this.createWindow(
+    const windowId = this.createWindow(
       'Internet Explorer',
       'assets/windowsIcons/ie-paper.png',
       content,
       {
         x: 140,
         y: 30,
+        taskbarGroup: 'ie',
       },
     );
 
-    const searchInput = document.getElementById('ie-google-query');
-    const searchButton = document.getElementById('ie-google-search');
-    const addressText = document.querySelector('.address-input span');
+    const windowElement = document.getElementById(`window-${windowId}`);
+    const searchInput = windowElement?.querySelector('#ie-google-query');
+    const searchButton = windowElement?.querySelector('#ie-google-search');
+    const addressText = windowElement?.querySelector('.address-input span');
 
     if (searchInput && addressText) {
       searchInput.addEventListener('keydown', (e) => {
