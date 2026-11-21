@@ -17,12 +17,7 @@ const XPContextMenu = {
     this.element.addEventListener('keydown', event => this.handleKeydown(event));
     document.body.appendChild(this.element);
     document.addEventListener('pointerdown', event => {
-      if (
-        !this.element.hidden &&
-        !this.element.contains(event.target)
-      ) {
-        this.close();
-      }
+      if (!this.element.hidden && !this.element.contains(event.target)) this.close();
     });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !this.element.hidden) {
@@ -31,6 +26,7 @@ const XPContextMenu = {
       }
     });
     window.addEventListener('blur', () => this.close());
+    this.syncShield();
     return this.element;
   },
 
@@ -51,8 +47,18 @@ const XPContextMenu = {
     const rect = element.getBoundingClientRect();
     element.style.left = `${Math.max(4, Math.min(pointX, window.innerWidth - rect.width - 4))}px`;
     element.style.top = `${Math.max(4, Math.min(pointY, window.innerHeight - rect.height - 4))}px`;
+    this.syncShield();
     element.querySelector('.xp-context-menu__item:not(:disabled)')?.focus();
     return element;
+  },
+
+  syncShield() {
+    const shield = document.getElementById('menu-shield');
+    if (!shield) return;
+    const startMenu = document.getElementById('start-menu');
+    const startMenuOpen = Boolean(startMenu && startMenu.style.display !== 'none');
+    const contextMenuOpen = Boolean(this.element && !this.element.hidden);
+    shield.style.display = startMenuOpen || contextMenuOpen ? 'block' : 'none';
   },
 
   renderItems(items, container) {
@@ -232,6 +238,7 @@ const XPContextMenu = {
     if (!this.element) return;
     this.element.hidden = true;
     this.element.replaceChildren();
+    this.syncShield();
     const trigger = this.trigger;
     const onClose = this.onClose;
     this.trigger = null;

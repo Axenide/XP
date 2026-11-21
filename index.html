@@ -793,6 +793,7 @@
         // views or Wayland windows close the menu instead of getting
         // lost in the pass-through.
         function setStartMenu(open) {
+          if (!open) window.XPContextMenu?.close();
           startMenu.style.display = open ? "flex" : "none";
           shield.style.display = open ? "block" : "none";
           startButton.classList.toggle("is-active", open);
@@ -842,7 +843,10 @@
           setStartMenu(!isVisible);
         });
 
-        shield.addEventListener("click", () => setStartMenu(false));
+        shield.addEventListener("click", () => {
+          window.XPContextMenu?.close();
+          if (startMenu.style.display !== "none") setStartMenu(false);
+        });
 
         startMenu.addEventListener("pointerover", (event) => {
           if (!(event.target instanceof Element)) return;

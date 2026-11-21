@@ -138,8 +138,12 @@ function loadContextMenu() {
     listeners: new Map(),
     body: null,
     activeElement: null,
+    elements: new Map(),
     createElement(tagName) {
       return new FakeElement(tagName, this);
+    },
+    getElementById(id) {
+      return this.elements.get(id) || null;
     },
     addEventListener(type, listener) {
       this.listeners.set(type, listener);
@@ -147,6 +151,12 @@ function loadContextMenu() {
   };
   document.body = document.createElement('body');
   document.body.setConnected(true);
+  const shield = document.createElement('div');
+  shield.style.display = 'none';
+  document.elements.set('menu-shield', shield);
+  const startMenu = document.createElement('div');
+  startMenu.style.display = 'none';
+  document.elements.set('start-menu', startMenu);
   const window = {
     innerWidth: 640,
     innerHeight: 480,
@@ -154,7 +164,7 @@ function loadContextMenu() {
   };
   const context = vm.createContext({ document, window });
   vm.runInContext(readFileSync(require.resolve('../js/context-menu.js'), 'utf8'), context);
-  return { menu: window.XPContextMenu, document };
+  return { menu: window.XPContextMenu, document, shield, startMenu };
 }
 
 test('context menu supports bold actions, submenus and selection callbacks', () => {
@@ -191,4 +201,26 @@ test('context menu supports bold actions, submenus and selection callbacks', () 
   assert.equal(element.hidden, true);
   assert.deepEqual(selections, ['Nested']);
   assert.equal(closeCount, 1);
+});
+
+test('outside clicks dismiss the context menu and the shared shield respects Start Menu state', () => {
+  const { menu, document, shield, startMenu } = loadContextMenu();
+  const trigger = document.createElement('button');
+  trigger.setConnected(true);
+  const outside = document.createElement('div');
+  document.body.appendChild(outside);
+
+  const element = menu.open({ x: 100, y: 80, trigger, items: [{ label: 'Open' }] });
+  assert.equal(shield.style.display, 'block');
+  document.listeners.get('pointerdown')({ target: outside });
+  assert.equal(element.hidden, true);
+  assert.equal(shield.style.display, 'none');
+
+  startMenu.style.display = 'flex';
+  menu.open({ x: 100, y: 80, trigger, items: [{ label: 'Open' }] });
+  menu.close();
+  assert.equal(shield.style.display, 'block');
+  startMenu.style.display = 'none';
+  menu.syncShield();
+  assert.equal(shield.style.display, 'none');
 });
