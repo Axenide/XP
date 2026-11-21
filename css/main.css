@@ -847,11 +847,11 @@ textarea,
 }
 
 .taskbar-right.tray-expanded {
-  padding-left: 65px;
+  padding-left: calc(10px + var(--tray-overflow-width, 55px));
 }
 
 .taskbar-right.tray-expanded .tray-overflow {
-  width: 55px;
+  width: var(--tray-overflow-width, 55px);
 }
 
 .tray-overflow-icons {
@@ -862,6 +862,7 @@ textarea,
   width: 55px;
   height: 100%;
   padding: 0 3px;
+  box-sizing: border-box;
 }
 
 .tray-overflow-icons img {
@@ -873,6 +874,140 @@ textarea,
 
 .tray-overflow-icons .tray-information-icon {
   height: 18px;
+}
+
+.taskbar-right.axctl-tray-mode .tray-overflow-icons {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.taskbar-right.axctl-tray-mode.tray-dragging .tray-overflow-icons:empty::before,
+.taskbar-right.axctl-tray-mode.tray-dragging .tray-visible-icons:empty::before {
+  content: "";
+  display: block;
+  flex: 1 1 auto;
+  min-width: 26px;
+  height: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.65);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.taskbar-right.axctl-tray-mode.tray-dragging .tray-overflow-icons,
+.taskbar-right.axctl-tray-mode.tray-dragging .tray-visible-icons {
+  outline: 1px dashed rgba(255, 255, 255, 0.75);
+  outline-offset: -1px;
+}
+
+.taskbar-right.axctl-tray-mode.tray-dragging .tray-expand-button {
+  outline: 1px dashed rgba(255, 255, 255, 0.75);
+  outline-offset: -2px;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.taskbar-right.axctl-tray-mode.tray-dragging .tray-expand-button.tray-drop-target {
+  outline: 1px solid #ffd34f;
+  background-color: rgba(255, 211, 79, 0.28);
+}
+
+.tray-visible-icons {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 2px;
+  flex: 0 0 auto;
+}
+
+.tray-real-icon {
+  all: unset;
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  line-height: normal;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tray-real-icon:active,
+.tray-real-icon.is-dragging {
+  cursor: grabbing;
+}
+
+.tray-real-icon.is-dragging {
+  opacity: 0.45;
+}
+
+.tray-drag-preview {
+  position: fixed;
+  z-index: 13001;
+  transform: translate(-50%, -50%);
+  opacity: 0.95;
+  pointer-events: none;
+  cursor: grabbing;
+}
+
+.tray-real-icon:focus-visible {
+  outline: 1px dotted white;
+}
+
+.tray-real-icon img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.tray-real-icon .tray-real-icon-overlay {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  height: 8px;
+}
+
+.tray-drop-indicator {
+  display: block;
+  flex: 0 0 2px;
+  width: 2px;
+  height: 18px;
+  margin: 0 1px;
+  background: #ffd34f;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.tray-visible-icons.tray-drop-active,
+.tray-overflow-icons.tray-drop-active {
+  background: rgba(255, 211, 79, 0.18);
+}
+
+.tray-expand-button.tray-drop-target {
+  outline: 1px solid #ffd34f;
+  background-color: rgba(255, 211, 79, 0.28);
+}
+
+.tray-expand-button[hidden] {
+  display: none;
 }
 
 .tray-expand-button {
@@ -938,6 +1073,146 @@ textarea,
 .tray-expand-button:focus-visible {
   outline: none;
   box-shadow: none;
+}
+
+.tray-context-menu {
+  position: fixed;
+  z-index: 13000;
+  display: flex;
+  flex-direction: column;
+  min-width: 176px;
+  max-width: calc(100vw - 8px);
+  padding: 2px;
+  margin: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #868686;
+  box-shadow: 2px 2px 1px rgba(0, 0, 0, 0.28);
+  color: #000;
+  font-family: Tahoma, "MS Sans Serif", sans-serif;
+  font-size: 11px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tray-context-menu[hidden],
+.tray-menu-submenu[hidden] {
+  display: none !important;
+}
+
+.tray-menu-entry {
+  position: relative;
+  min-width: 0;
+}
+
+.xp-context-menu__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 22px;
+  margin: 0;
+  padding: 1px 18px 1px 2px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-sizing: border-box;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+  outline: none;
+  gap: 0;
+}
+
+.xp-context-menu__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 16px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.xp-context-menu__icon img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.xp-context-menu__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 4px;
+  line-height: 1.2;
+}
+
+.xp-context-menu__arrow {
+  flex: 0 0 auto;
+  margin-left: 12px;
+  font-family: Tahoma, "Segoe UI", sans-serif;
+  font-size: 8px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.xp-context-menu__item:hover:not(:disabled),
+.xp-context-menu__item:active:not(:disabled),
+.xp-context-menu__item:focus-visible:not(:disabled),
+.xp-context-menu__item.is-submenu-open:not(:disabled) {
+  background: #316ac5;
+  border-color: #316ac5;
+  color: #fff;
+  outline: none;
+}
+
+.xp-context-menu__item:disabled {
+  color: gray;
+  cursor: default;
+}
+
+.xp-context-menu__separator {
+  height: 1px;
+  margin: 3px 2px 3px 26px;
+  border: 0;
+  background: #c5c5c5;
+}
+
+.tray-menu-submenu {
+  position: absolute;
+  top: -3px;
+  left: calc(100% - 1px);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 128px;
+  padding: 2px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #868686;
+  box-shadow: 2px 2px 1px rgba(0, 0, 0, 0.28);
+  color: #000;
+}
+
+.tray-menu-submenu.opens-left {
+  right: calc(100% - 1px);
+  left: auto;
+}
+
+.tray-menu-submenu.opens-up {
+  top: auto;
+  bottom: -3px;
+}
+
+.tray-menu-submenu .xp-context-menu__item {
+  padding-right: 12px;
 }
 
 .tray-balloon-anchor {

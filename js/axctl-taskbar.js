@@ -13,6 +13,7 @@ const XPAxctlTaskbar = {
   icons: new Map(),
   windows: [],
   stateGeneration: 0,
+  trayEventGeneration: 0,
   connectPromise: null,
   reconnectTimer: 0,
 
@@ -27,6 +28,7 @@ const XPAxctlTaskbar = {
     }
 
     this.active = true;
+    window.XPAxctlTray?.init(this);
     window.addEventListener('socketData', event => this.handleSocketData(event));
     window.addEventListener('socketClosed', event => this.handleSocketClosed(event));
     window.addEventListener('processExit', event => this.handleProcessExit(event));
@@ -92,6 +94,7 @@ const XPAxctlTaskbar = {
       connection.id,
       JSON.stringify({ id: 1, method: 'System.Subscribe', params: {} }) + '\n',
     );
+    this.refreshTrayItems();
   },
 
   async startDaemon() {
@@ -144,6 +147,14 @@ const XPAxctlTaskbar = {
     if (socketId === String(this.subscriptionSocketId)) {
       if (Array.isArray(message?.state?.windows)) {
         this.updateWindows(message.state.windows);
+      }
+      const tray = window.XPAxctlTray;
+      if (message?.method === 'Event.TrayChanged' && Array.isArray(message.params?.items)) {
+        this.trayEventGeneration += 1;
+        tray?.setItems(message.params.items);
+      } else if (message?.method === 'Event.TrayItemRemoved' && message.params?.id) {
+        this.trayEventGeneration += 1;
+        tray?.removeItem(String(message.params.id));
       }
       return;
     }
@@ -223,6 +234,16 @@ const XPAxctlTaskbar = {
           reject(error);
         });
     });
+  },
+
+  async refreshTrayItems() {
+    const generation = this.trayEventGeneration;
+    try {
+      const items = await this.request('Tray.List');
+      if (generation === this.trayEventGeneration && Array.isArray(items)) {
+        window.XPAxctlTray?.setItems(items);
+      }
+    } catch {}
   },
 
   normalizeIdentity(value) {

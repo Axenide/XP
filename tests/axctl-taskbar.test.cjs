@@ -62,10 +62,13 @@ test('reuses an existing daemon and subscribes to its state stream', async () =>
     },
   });
   adapterState.adapter.active = true;
+  let trayRefreshes = 0;
+  adapterState.adapter.refreshTrayItems = () => { trayRefreshes += 1; };
 
   await adapterState.adapter.connect();
 
   assert.equal(adapterState.adapter.subscriptionSocketId, 12);
+  assert.equal(trayRefreshes, 1);
   assert.equal(adapterState.calls.some(([method]) => method === 'execSpawn'), false);
   const subscribe = adapterState.calls.find(([method]) => method === 'socketSend');
   assert.equal(subscribe[1], 12);
@@ -90,6 +93,7 @@ test('starts axctl when its socket is absent and waits for readiness', async () 
     },
   });
   adapterState.adapter.active = true;
+  adapterState.adapter.refreshTrayItems = () => {};
 
   await adapterState.adapter.connect();
 
@@ -147,4 +151,44 @@ test('a group click focuses the first window or cycles without minimizing', asyn
     ['Window.Focus', '2'],
     ['Window.Focus', '1'],
   ]);
+});
+
+test('tray events update the real tray and supersede an older list snapshot', async () => {
+  const adapterState = setup();
+  const trayUpdates = [];
+  const removedItems = [];
+  let resolveSnapshot;
+  adapterState.window.XPAxctlTray = {
+    setItems(items) { trayUpdates.push(items); },
+    removeItem(id) { removedItems.push(id); },
+  };
+  adapterState.adapter.subscriptionSocketId = 44;
+  adapterState.adapter.request = () =>
+    new Promise(resolve => {
+      resolveSnapshot = resolve;
+    });
+
+  const refresh = adapterState.adapter.refreshTrayItems();
+  adapterState.adapter.handleSocketData({
+    id: 44,
+    data: JSON.stringify({
+      method: 'Event.TrayChanged',
+      params: { type: 'changed', items: [{ id: 'new-item' }] },
+    }),
+  });
+  adapterState.adapter.handleSocketData({
+    id: 44,
+    data: JSON.stringify({
+      method: 'Event.TrayItemRemoved',
+      params: { type: 'removed', id: 'old-item' },
+    }),
+  });
+  resolveSnapshot([{ id: 'stale-item' }]);
+  await refresh;
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(trayUpdates)),
+    [[{ id: 'new-item' }]],
+  );
+  assert.deepEqual(removedItems, ['old-item']);
 });
