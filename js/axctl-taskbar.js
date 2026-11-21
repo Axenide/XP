@@ -14,6 +14,7 @@ const XPAxctlTaskbar = {
   windows: [],
   stateGeneration: 0,
   trayEventGeneration: 0,
+  applicationCatalogGeneration: 0,
   connectPromise: null,
   reconnectTimer: 0,
 
@@ -29,6 +30,7 @@ const XPAxctlTaskbar = {
 
     this.active = true;
     window.XPAxctlTray?.init(this);
+    window.XPStartMenuApps?.init(this);
     window.addEventListener('socketData', event => this.handleSocketData(event));
     window.addEventListener('socketClosed', event => this.handleSocketClosed(event));
     window.addEventListener('processExit', event => this.handleProcessExit(event));
@@ -95,6 +97,7 @@ const XPAxctlTaskbar = {
       JSON.stringify({ id: 1, method: 'System.Subscribe', params: {} }) + '\n',
     );
     this.refreshTrayItems();
+    this.refreshApplications();
   },
 
   async startDaemon() {
@@ -155,6 +158,9 @@ const XPAxctlTaskbar = {
       } else if (message?.method === 'Event.TrayItemRemoved' && message.params?.id) {
         this.trayEventGeneration += 1;
         tray?.removeItem(String(message.params.id));
+      }
+      if (message?.method === 'Event.ApplicationsChanged') {
+        this.refreshApplications();
       }
       return;
     }
@@ -244,6 +250,24 @@ const XPAxctlTaskbar = {
         window.XPAxctlTray?.setItems(items);
       }
     } catch {}
+  },
+
+  async refreshApplications() {
+    const generation = ++this.applicationCatalogGeneration;
+    try {
+      const applications = await this.request('Application.List');
+      if (generation === this.applicationCatalogGeneration) {
+        if (Array.isArray(applications)) {
+          window.XPStartMenuApps?.setApplications(applications);
+        } else {
+          window.XPStartMenuApps?.setUnavailable();
+        }
+      }
+    } catch {
+      if (generation === this.applicationCatalogGeneration) {
+        window.XPStartMenuApps?.setUnavailable();
+      }
+    }
   },
 
   normalizeIdentity(value) {

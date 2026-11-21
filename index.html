@@ -478,6 +478,7 @@
     <script src="js/shell-sync.js"></script>
     <script src="js/window-manager.js"></script>
     <script src="js/apps.js"></script>
+    <script src="js/start-menu-apps.js"></script>
     <script src="js/axctl-tray.js"></script>
     <script src="js/axctl-taskbar.js"></script>
     <script>
@@ -585,6 +586,15 @@
         const shield = document.getElementById("menu-shield");
         const allProgramsTrigger = document.getElementById("all-programs-trigger");
         const programsMenu = document.getElementById("all-programs-menu");
+        const axctlEnabled = Boolean(
+          window.axtml &&
+          !window.__axtmlWindowMode &&
+          window.XPShellSync?.isAuthority,
+        );
+        if (axctlEnabled) {
+          startMenu.tabIndex = -1;
+          window.XPStartMenuApps?.init(window.XPAxctlTaskbar);
+        }
         const startMenuFlyouts = Array.from(
           startMenu.querySelectorAll("[data-start-menu-flyout]"),
         );
@@ -764,6 +774,7 @@
           submenu.hidden = false;
           trigger.setAttribute("aria-expanded", "true");
           positionFlyout(submenu, trigger);
+          window.XPStartMenuApps?.loadIcons(submenu);
         }
 
         // The shield is the click-catcher that makes "click outside"
@@ -774,12 +785,43 @@
         function setStartMenu(open) {
           startMenu.style.display = open ? "flex" : "none";
           shield.style.display = open ? "block" : "none";
-          if (!open) {
-            startMenuFlyouts.forEach(closeStartMenuFlyout);
-            setProgramsMenu(false);
+          if (open) {
+            if (axctlEnabled) {
+              startMenu.focus({ preventScroll: true });
+              window.XPStartMenuApps?.setKeyboardCapture(true);
+            }
+            return;
+          }
+          startMenuFlyouts.forEach(closeStartMenuFlyout);
+          setProgramsMenu(false);
+          if (axctlEnabled) {
+            window.XPStartMenuApps?.setKeyboardCapture(false);
+            window.XPStartMenuApps?.clearSearch();
           }
         }
         window.setStartMenuVisible = setStartMenu;
+
+        function applyProgramSearch(query) {
+          const searchTerm = String(query || "");
+          const autoOpenKey = window.XPStartMenuApps?.setSearch(searchTerm) || "";
+          setProgramsMenu(true);
+          if (!searchTerm.trim()) {
+            const firstItem = getProgramItems(programsMenu)[0];
+            (firstItem || startMenu).focus();
+            return;
+          }
+          const folder = Array.from(
+            programsMenu.querySelectorAll(":scope > .program-menu-folder"),
+          ).find((item) => item.dataset.programFolder === autoOpenKey);
+          if (!folder) {
+            startMenu.focus();
+            return;
+          }
+          setFolderOpen(folder, true);
+          const submenu = folder.querySelector(":scope > .program-submenu");
+          const firstItem = getProgramItems(submenu)[0];
+          (firstItem || folder.querySelector(":scope > .program-menu-item"))?.focus();
+        }
 
         startButton.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -854,6 +896,14 @@
             setFolderOpen(folderItem.parentElement, event.detail === 0 ? submenu.hidden : true);
             return;
           }
+          const installedApp = event.target.closest("[data-installed-app-id]");
+          if (installedApp) {
+            window.XPStartMenuApps
+              ?.launch(installedApp.dataset.installedAppId)
+              .catch(() => {});
+            setStartMenu(false);
+            return;
+          }
           const appItem = event.target.closest(
             ".menu-item[data-app], .program-menu-item[data-app]",
           );
@@ -864,6 +914,40 @@
 
         startMenu.addEventListener("keydown", (event) => {
           if (!(event.target instanceof Element)) return;
+          if (
+            axctlEnabled &&
+            !event.ctrlKey &&
+            !event.metaKey &&
+            !event.altKey &&
+            !event.target.closest("input, textarea, [contenteditable='true']")
+          ) {
+            if (event.key === "Backspace") {
+              const searchTerm = window.XPStartMenuApps?.searchTerm || "";
+              if (searchTerm) applyProgramSearch(searchTerm.slice(0, -1));
+              event.preventDefault();
+              return;
+            }
+            if (event.key.length === 1) {
+              const searchTerm = window.XPStartMenuApps?.searchTerm || "";
+              applyProgramSearch(searchTerm + event.key);
+              event.preventDefault();
+              return;
+            }
+          }
+          if (axctlEnabled && event.target === startMenu) {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              event.preventDefault();
+              if (programsMenu.hidden) setProgramsMenu(true);
+              const items = getProgramItems(programsMenu);
+              (event.key === "ArrowDown" ? items[0] : items.at(-1))?.focus();
+              return;
+            }
+            if (event.key === "Enter") {
+              event.preventDefault();
+              setProgramsMenu(true, true);
+              return;
+            }
+          }
           const flyoutTrigger = event.target.closest(
             "[data-start-menu-flyout-trigger]",
           );
@@ -946,6 +1030,12 @@
             event.key !== "Escape" ||
             window.getComputedStyle(startMenu).display === "none"
           ) {
+            return;
+          }
+          if (axctlEnabled) {
+            setStartMenu(false);
+            startButton.focus();
+            event.preventDefault();
             return;
           }
           const openFlyout = startMenuFlyouts.find((flyout) => {

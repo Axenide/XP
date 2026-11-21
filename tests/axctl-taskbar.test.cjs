@@ -7,6 +7,8 @@ function setup({ host = true, authority = true, windowMode = false, call } = {})
   const listeners = new Map();
   const updates = [];
   const calls = [];
+  const applicationUpdates = [];
+  const unavailableCatalogs = [];
   const window = {
     axtml: host
       ? {
@@ -21,6 +23,11 @@ function setup({ host = true, authority = true, windowMode = false, call } = {})
       isAuthority: authority,
       setExternalWindows(windows) { updates.push(windows); },
     },
+    XPStartMenuApps: {
+      init() {},
+      setApplications(applications) { applicationUpdates.push(applications); },
+      setUnavailable() { unavailableCatalogs.push(true); },
+    },
     addEventListener(type, listener) { listeners.set(type, listener); },
   };
   const document = { body: { dataset: { axWindowClass: 'axtml-nostyle' } } };
@@ -31,7 +38,15 @@ function setup({ host = true, authority = true, windowMode = false, call } = {})
     clearTimeout,
   });
   vm.runInContext(readFileSync(require.resolve('../js/axctl-taskbar.js'), 'utf8'), context);
-  return { adapter: window.XPAxctlTaskbar, calls, listeners, updates, window };
+  return {
+    adapter: window.XPAxctlTaskbar,
+    applicationUpdates,
+    calls,
+    listeners,
+    unavailableCatalogs,
+    updates,
+    window,
+  };
 }
 
 test('web-only and non-authority views do not initialize axctl', () => {
@@ -64,6 +79,7 @@ test('reuses an existing daemon and subscribes to its state stream', async () =>
   adapterState.adapter.active = true;
   let trayRefreshes = 0;
   adapterState.adapter.refreshTrayItems = () => { trayRefreshes += 1; };
+  adapterState.adapter.refreshApplications = () => {};
 
   await adapterState.adapter.connect();
 
@@ -94,6 +110,7 @@ test('starts axctl when its socket is absent and waits for readiness', async () 
   });
   adapterState.adapter.active = true;
   adapterState.adapter.refreshTrayItems = () => {};
+  adapterState.adapter.refreshApplications = () => {};
 
   await adapterState.adapter.connect();
 
@@ -191,4 +208,55 @@ test('tray events update the real tray and supersede an older list snapshot', as
     [[{ id: 'new-item' }]],
   );
   assert.deepEqual(removedItems, ['old-item']);
+});
+
+test('the application catalog refresh requests Application.List', async () => {
+  const adapterState = setup();
+  const applications = [{ id: 'browser.desktop', name: 'Browser' }];
+  const methods = [];
+  adapterState.adapter.request = async method => {
+    methods.push(method);
+    return applications;
+  };
+
+  await adapterState.adapter.refreshApplications();
+
+  assert.deepEqual(methods, ['Application.List']);
+  assert.deepEqual(adapterState.applicationUpdates, [applications]);
+});
+
+test('application catalog events trigger a fresh list request', () => {
+  const adapterState = setup();
+  const refreshes = [];
+  adapterState.adapter.subscriptionSocketId = 44;
+  adapterState.adapter.refreshApplications = () => refreshes.push(true);
+
+  adapterState.adapter.handleSocketData({
+    id: 44,
+    data: JSON.stringify({
+      method: 'Event.ApplicationsChanged',
+      params: { revision: 2 },
+    }),
+  });
+
+  assert.deepEqual(refreshes, [true]);
+});
+
+test('a newer application catalog snapshot supersedes an older request', async () => {
+  const adapterState = setup();
+  const responses = [];
+  adapterState.adapter.request = () =>
+    new Promise(resolve => responses.push(resolve));
+
+  const olderRefresh = adapterState.adapter.refreshApplications();
+  const newerRefresh = adapterState.adapter.refreshApplications();
+  responses[1]([{ id: 'new.desktop', name: 'New' }]);
+  await newerRefresh;
+  responses[0]([{ id: 'old.desktop', name: 'Old' }]);
+  await olderRefresh;
+
+  assert.deepEqual(
+    adapterState.applicationUpdates.map(applications => applications[0].id),
+    ['new.desktop'],
+  );
 });

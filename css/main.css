@@ -1390,6 +1390,10 @@ textarea,
   height: 477px;
 }
 
+.xp-start-menu[data-axctl-apps-enabled]:focus {
+  outline: none;
+}
+
 .xp-start-menu header {
   position: relative;
   display: flex;
@@ -1657,6 +1661,12 @@ textarea,
   flex: 1;
 }
 
+.xp-start-menu .installed-app-item > span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .xp-start-menu .program-menu-item:hover,
 .xp-start-menu .program-menu-item:focus-visible,
 .xp-start-menu .program-menu-item[aria-expanded="true"] {
@@ -1690,6 +1700,12 @@ textarea,
   min-height: 28px;
 }
 
+.xp-start-menu [data-installed-category] > .program-submenu {
+  max-height: min(65vh, 520px);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .xp-start-menu .start-menu-flyout-menu {
   top: auto;
   bottom: 0;
@@ -1704,6 +1720,12 @@ textarea,
   min-height: 25px;
 }
 
+.xp-start-menu [data-installed-category] > .program-submenu[data-program-empty="true"] {
+  box-sizing: border-box;
+  width: 200px;
+  padding-right: 8px;
+}
+
 .xp-start-menu .program-menu-empty {
   display: flex;
   align-items: center;
@@ -1714,6 +1736,21 @@ textarea,
   padding: 0;
   box-shadow: inset 3px 0 #4081ff;
   color: #000;
+}
+
+.xp-start-menu .program-menu-status {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  box-shadow: inset 3px 0 #4081ff;
+  color: #555;
+}
+
+.xp-start-menu .program-menu-match {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 1px;
 }
 
 .xp-start-menu .program-submenu[data-program-empty="true"] .program-menu-empty {
