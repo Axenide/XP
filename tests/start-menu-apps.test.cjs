@@ -30,6 +30,24 @@ class FakeElement {
   setAttribute(name, value) {
     this.attributes[name] = String(value);
   }
+
+  querySelectorAll(selector) {
+    const matches = [];
+    const visit = element => {
+      for (const child of element.children) {
+        if (
+          selector === 'img[data-application-icon]' &&
+          child.tagName === 'img' &&
+          child.dataset.applicationIcon
+        ) {
+          matches.push(child);
+        }
+        visit(child);
+      }
+    };
+    visit(this);
+    return matches;
+  }
 }
 
 function loadModule({ host = false, authority = false, menu, startMenu } = {}) {
@@ -166,6 +184,94 @@ test('launch requests use the desktop application ID', async () => {
   assert.deepEqual(JSON.parse(JSON.stringify(requests)), [
     ['Application.Launch', { id: 'org.example.App.desktop' }],
   ]);
+});
+
+test('the default list shows 15 categories and More contains the rest in a submenu', () => {
+  const menu = new FakeElement();
+  const startMenu = new FakeElement();
+  const { apps } = loadModule({ host: true, authority: true, menu, startMenu });
+  apps.init({ fallbackIcon: 'fallback.png' });
+  const applications = Array.from({ length: 18 }, (_, index) => ({
+    id: `app-${index}`,
+    name: `App ${index}`,
+    categories: [`Custom${String(index).padStart(2, '0')}`],
+  }));
+  apps.setApplications(applications);
+
+  assert.equal(menu.children.length, 16);
+  assert.equal(menu.children[14].dataset.programFolder, 'Custom14');
+
+  const moreFolder = menu.children[15];
+  const moreTrigger = moreFolder.children[0];
+  const moreSubmenu = moreFolder.children[1];
+  assert.equal(moreFolder.className, 'program-menu-folder');
+  assert.equal(moreFolder.dataset.programMore, 'true');
+  assert.equal(moreTrigger.className, 'program-menu-item');
+  assert.equal(moreTrigger.children[1].textContent, 'More...');
+  assert.equal(moreTrigger.attributes['aria-haspopup'], 'menu');
+  assert.equal(moreSubmenu.className, 'program-submenu');
+  assert.equal(moreSubmenu.dataset.programMoreMenu, 'true');
+  assert.equal(moreSubmenu.hidden, true);
+  assert.equal(moreSubmenu.children.length, 3);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(
+      moreSubmenu.children.map(folder => folder.children[0].children[1].textContent),
+    )),
+    ['Custom15', 'Custom16', 'Custom17'],
+  );
+});
+
+test('search results are not limited to 15 categories', () => {
+  const menu = new FakeElement();
+  const startMenu = new FakeElement();
+  const { apps } = loadModule({ host: true, authority: true, menu, startMenu });
+  apps.init({ fallbackIcon: 'fallback.png' });
+  apps.setApplications(
+    Array.from({ length: 18 }, (_, index) => ({
+      id: `app-${index}`,
+      name: `App ${index}`,
+      categories: [`Custom${String(index).padStart(2, '0')}`],
+    })),
+  );
+
+  apps.setSearch('Custom');
+
+  assert.equal(menu.children.length, 19);
+  assert.equal(menu.children.some(item => item.dataset.programMore), false);
+
+  apps.clearSearch();
+
+  assert.equal(menu.children.length, 16);
+  assert.equal(menu.children[15].dataset.programMore, 'true');
+});
+
+test('More does not resolve application icons until a nested category opens', () => {
+  const menu = new FakeElement();
+  const startMenu = new FakeElement();
+  const resolvedIcons = [];
+  const { apps } = loadModule({ host: true, authority: true, menu, startMenu });
+  apps.init({
+    fallbackIcon: 'fallback.png',
+    resolveIcon(icon) {
+      resolvedIcons.push(icon);
+      return Promise.resolve(`resolved:${icon}`);
+    },
+  });
+  apps.setApplications(
+    Array.from({ length: 18 }, (_, index) => ({
+      id: `app-${index}`,
+      name: `App ${index}`,
+      icon: `icon-${index}`,
+      categories: [`Custom${String(index).padStart(2, '0')}`],
+    })),
+  );
+
+  const moreMenu = menu.children[15].children[1];
+  apps.loadIcons(moreMenu);
+  assert.deepEqual(resolvedIcons, []);
+
+  apps.loadIcons(moreMenu.children[0].children[1]);
+  assert.deepEqual(resolvedIcons, ['icon-15']);
 });
 
 test('AXTML menu keyboard capture arms on-demand and releases on close', async () => {

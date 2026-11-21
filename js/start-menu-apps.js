@@ -4,6 +4,7 @@ const XPStartMenuApps = {
   enabled: false,
   applications: [],
   searchTerm: '',
+  maxVisibleCategories: 15,
   loading: true,
   available: true,
   nextMenuId: 1,
@@ -320,7 +321,22 @@ const XPStartMenuApps = {
       this.renderStatus('No installed applications found.');
       return;
     }
-    view.groups.forEach(group => this.renderGroup(group, view));
+    const hasMoreGroups = view.mode === 'all' && view.groups.length > this.maxVisibleCategories;
+    const visibleGroups = hasMoreGroups
+      ? view.groups.slice(0, this.maxVisibleCategories)
+      : view.groups;
+    visibleGroups.forEach(group => this.renderGroup(group, view));
+    if (hasMoreGroups) {
+      this.renderGroup(
+        {
+          key: '@more',
+          name: 'More...',
+          applications: [],
+          subgroups: view.groups.slice(this.maxVisibleCategories),
+        },
+        view,
+      );
+    }
   },
 
   renderStatus(message) {
@@ -331,11 +347,16 @@ const XPStartMenuApps = {
     this.menu.appendChild(status);
   },
 
-  renderGroup(group, view) {
+  renderGroup(group, view, parentMenu = this.menu) {
+    const hasSubgroups = Array.isArray(group.subgroups);
     const folder = document.createElement('div');
     folder.className = 'program-menu-folder';
     folder.dataset.programFolder = group.key;
-    folder.dataset.installedCategory = 'true';
+    if (hasSubgroups) {
+      folder.dataset.programMore = 'true';
+    } else {
+      folder.dataset.installedCategory = 'true';
+    }
     if (group.artificial) folder.dataset.programArtificial = 'true';
 
     const trigger = document.createElement('button');
@@ -360,11 +381,19 @@ const XPStartMenuApps = {
     const submenu = document.createElement('div');
     submenu.className = 'program-submenu';
     submenu.id = submenuId;
-    submenu.dataset.programCategory = group.key;
+    if (hasSubgroups) {
+      submenu.dataset.programMoreMenu = 'true';
+    } else {
+      submenu.dataset.programCategory = group.key;
+    }
     submenu.setAttribute('role', 'menu');
     submenu.setAttribute('aria-label', group.name);
     submenu.hidden = true;
-    if (!group.applications.length) {
+    if (hasSubgroups) {
+      for (const subgroup of group.subgroups) {
+        this.renderGroup(subgroup, view, submenu);
+      }
+    } else if (!group.applications.length) {
       submenu.dataset.programEmpty = 'true';
       const empty = document.createElement('span');
       empty.className = 'program-menu-empty';
@@ -377,7 +406,7 @@ const XPStartMenuApps = {
       }
     }
     folder.append(trigger, submenu);
-    this.menu.appendChild(folder);
+    parentMenu.appendChild(folder);
   },
 
   createApplicationItem(application, view) {
@@ -419,7 +448,13 @@ const XPStartMenuApps = {
   },
 
   loadIcons(container) {
-    if (!this.adapter?.resolveIcon || !container) return;
+    if (
+      !this.adapter?.resolveIcon ||
+      !container ||
+      container.dataset.programMoreMenu
+    ) {
+      return;
+    }
     for (const image of container.querySelectorAll('img[data-application-icon]')) {
       const iconName = image.dataset.applicationIcon;
       if (!iconName || image.dataset.iconRequested) continue;
