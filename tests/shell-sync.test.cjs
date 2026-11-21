@@ -15,14 +15,22 @@ test('a delayed window state cannot restore a window after its close event', () 
       taskbarButtons.push(button);
     },
   };
+  const taskbar = { appendChild() {}, getClientRects: () => [{}] };
   const document = {
     querySelector(selector) {
-      if (selector === '.xp-taskbar') return { getClientRects: () => [{}] };
+      if (selector === '.xp-taskbar') return taskbar;
       if (selector === '.taskbar-apps') return taskbarApps;
       return null;
     },
+    querySelectorAll() { return []; },
     createElement() {
-      return { addEventListener() {} };
+      return {
+        dataset: {},
+        children: [],
+        addEventListener() {},
+        appendChild(child) { this.children.push(child); },
+        setAttribute() {},
+      };
     },
     addEventListener() {},
   };
@@ -106,12 +114,14 @@ test('external application windows share one taskbar button and relay activation
       buttons.push(button);
     },
   };
+  const taskbar = { appendChild() {}, getClientRects: () => [{}] };
   const document = {
     querySelector(selector) {
-      if (selector === '.xp-taskbar') return { getClientRects: () => [{}] };
+      if (selector === '.xp-taskbar') return taskbar;
       if (selector === '.taskbar-apps') return taskbarApps;
       return null;
     },
+    querySelectorAll() { return []; },
     createElement() {
       return {
         children: [],
@@ -167,9 +177,12 @@ test('external application windows share one taskbar button and relay activation
 
   assert.equal(buttons.length, 1);
   assert.match(buttons[0].className, /focused/);
-  assert.equal(buttons[0].children[1].textContent, 'Browser');
-  assert.equal(buttons[0].children[2].textContent, '2');
-  buttons[0].listeners.get('click')();
+  assert.equal(buttons[0].children[1].textContent, '2');
+  assert.equal(buttons[0].children[2].textContent, 'Browser');
+  window.XPShellSync.dispatchRequest({
+    type: 'external-taskbar',
+    groupId: 'org.example.browser',
+  });
   assert.deepEqual(calls, ['org.example.browser']);
 });
 
@@ -183,16 +196,22 @@ test('XP-managed taskbar windows keep their minimize behavior', () => {
       buttons.push(button);
     },
   };
+  const taskbar = { appendChild() {}, getClientRects: () => [{}] };
   const document = {
     querySelector(selector) {
-      if (selector === '.xp-taskbar') return { getClientRects: () => [{}] };
+      if (selector === '.xp-taskbar') return taskbar;
       if (selector === '.taskbar-apps') return taskbarApps;
       return null;
     },
+    querySelectorAll() { return []; },
     createElement() {
       return {
+        dataset: {},
+        children: [],
         listeners: new Map(),
         addEventListener(type, listener) { this.listeners.set(type, listener); },
+        appendChild(child) { this.children.push(child); },
+        setAttribute() {},
       };
     },
     addEventListener() {},
