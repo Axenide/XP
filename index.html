@@ -480,6 +480,7 @@
     <script src="js/apps.js"></script>
     <script src="js/start-menu-apps.js"></script>
     <script src="js/start-menu-keyboard.js"></script>
+    <script src="js/start-menu-profile.js"></script>
     <script src="js/axctl-tray.js"></script>
     <script src="js/axctl-taskbar.js"></script>
     <script>
@@ -596,6 +597,7 @@
           startMenu.tabIndex = -1;
           window.XPStartMenuApps?.init(window.XPAxctlTaskbar);
           window.XPStartMenuKeyboard?.init(startMenu, true);
+          window.XPStartMenuProfile?.init(startMenu);
         }
         const startMenuFlyouts = Array.from(
           startMenu.querySelectorAll("[data-start-menu-flyout]"),

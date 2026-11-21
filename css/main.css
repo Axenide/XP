@@ -1394,6 +1394,10 @@ textarea,
   outline: none;
 }
 
+.xp-start-menu[data-axctl-apps-enabled] .header-img {
+  object-fit: cover;
+}
+
 .xp-start-menu header {
   position: relative;
   display: flex;
