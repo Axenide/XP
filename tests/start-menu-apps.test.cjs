@@ -55,8 +55,8 @@ function loadModule({ host = false, authority = false, menu, startMenu } = {}) {
   const window = {
     axtml: host
       ? {
-          call(method) {
-            bridgeCalls.push(method);
+          call(method, ...args) {
+            bridgeCalls.push([method, ...args]);
             return Promise.resolve();
           },
         }
@@ -286,5 +286,8 @@ test('AXTML menu keyboard capture arms on-demand and releases on close', async (
   await apps.setKeyboardCapture(true);
   await apps.setKeyboardCapture(false);
 
-  assert.deepEqual(bridgeCalls, ['armKeyboard', 'releaseKeyboard']);
+  assert.deepEqual(JSON.parse(JSON.stringify(bridgeCalls)), [
+    ['armKeyboard', { band: 2 }],
+    ['releaseKeyboard'],
+  ]);
 });

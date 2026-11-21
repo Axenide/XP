@@ -161,9 +161,28 @@ const XPStartMenuApps = {
 
   setKeyboardCapture(active) {
     if (!this.enabled || !window.axtml) return Promise.resolve();
-    return window.axtml
-      .call(active ? 'armKeyboard' : 'releaseKeyboard')
-      .catch(() => {});
+    const method = active ? 'armKeyboard' : 'releaseKeyboard';
+    const options = active ? [{ band: 2 }] : [];
+    const commandId = window.XPShellSync?.currentInputCommand ?? null;
+    window.XPShellSync?.debugInput?.('keyboard-capture-request', {
+      active,
+      band: active ? 2 : null,
+      commandId,
+    });
+    return window.axtml.call(method, ...options).then(() => {
+      window.XPShellSync?.debugInput?.('keyboard-capture-resolved', {
+        active,
+        band: active ? 2 : null,
+        commandId,
+      });
+    }).catch(error => {
+      window.XPShellSync?.debugInput?.('keyboard-capture-failed', {
+        active,
+        band: active ? 2 : null,
+        commandId,
+        error: String(error),
+      });
+    });
   },
 
   normalizeText(value) {

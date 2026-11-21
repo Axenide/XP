@@ -792,8 +792,14 @@
         // of the screen (below the menu itself), so clicks on other
         // views or Wayland windows close the menu instead of getting
         // lost in the pass-through.
-        function setStartMenu(open) {
+        function setStartMenu(open, source = "api") {
           if (!open) window.XPContextMenu?.close();
+          const wasOpen = window.getComputedStyle(startMenu).display !== "none";
+          window.XPShellSync?.debugInput?.("start-menu-transition", {
+            source,
+            requestedOpen: Boolean(open),
+            wasOpen,
+          });
           startMenu.style.display = open ? "flex" : "none";
           shield.style.display = open ? "block" : "none";
           startButton.classList.toggle("is-active", open);
@@ -801,6 +807,7 @@
           if (open) {
             if (axctlEnabled) {
               startMenu.focus({ preventScroll: true });
+              window.XPShellSync?.debugInput?.("start-menu-focused", { source });
               window.XPStartMenuApps?.setKeyboardCapture(true);
             }
             return;
@@ -840,7 +847,11 @@
           e.stopPropagation();
           const isVisible =
             window.getComputedStyle(startMenu).display !== "none";
-          setStartMenu(!isVisible);
+          window.XPShellSync?.debugInput?.("start-button-click", {
+            trusted: e.isTrusted,
+            wasOpen: isVisible,
+          });
+          setStartMenu(!isVisible, "start-button");
         });
 
         shield.addEventListener("click", () => {

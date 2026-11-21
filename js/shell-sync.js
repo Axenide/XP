@@ -24,6 +24,10 @@ const XPShellSync = {
   closedNativeWindows: new Set(),
   authority: true,
   taskbarMenuSequence: 0,
+  inputDebugSequence: 0,
+  currentInputCommand: null,
+  activeWindow: null,
+  activeWindowRevision: 0,
   _ro: null,
   _rescanTimer: 0,
 
@@ -40,15 +44,78 @@ const XPShellSync = {
   },
 
   handleCommand(event) {
+    if (event.command !== 'start') return;
+    if (!this.isAuthority) {
+      this.debugInput('start-command-ignored', { command: event.command, reason: 'not-authority' });
+      return;
+    }
+    const commandId = ++this.inputDebugSequence;
+    this.currentInputCommand = commandId;
+    this.debugInput('start-command-received', {
+      command: event.command,
+      commandId,
+      trusted: event.isTrusted ?? null,
+    });
+    const button = document.getElementById('start-button');
+    this.debugInput('start-click-before', { commandId, buttonFound: Boolean(button) });
+    button?.click();
+    this.debugInput('start-click-after', { commandId, buttonFound: Boolean(button) });
+    this.currentInputCommand = null;
+  },
+
+  debugInput(event, details = {}) {
+    if (!window.axtml?.call) return;
+    const active = document.activeElement;
+    const menu = document.getElementById('start-menu');
+    const describe = (element) => element ? {
+      tag: String(element.tagName || '').toLowerCase(),
+      id: String(element.id || ''),
+      className: typeof element.className === 'string' ? element.className : '',
+      tabIndex: Number.isInteger(element.tabIndex) ? element.tabIndex : null,
+    } : null;
+    let menuDisplay = menu?.style?.display ?? null;
+    if (menu && typeof window.getComputedStyle === 'function') {
+      menuDisplay = window.getComputedStyle(menu).display;
+    }
+    const record = {
+      source: 'XP',
+      event,
+      time: new Date().toISOString(),
+      commandId: this.currentInputCommand,
+      layer: this.layer,
+      authority: this.isAuthority,
+      documentHasFocus: typeof document.hasFocus === 'function' ? document.hasFocus() : null,
+      menu: menu ? { display: menuDisplay, expanded: menu.getAttribute?.('aria-expanded') ?? null } : null,
+      activeElement: describe(active),
+      ...details,
+    };
+    window.axtml.call('__inputDebug', record).catch(() => {});
+  },
+
+  handleWindowFocus(event) {
+    const next = {
+      class: String(event.class || ''),
+      title: String(event.title || ''),
+    };
+    if (!next.class) return;
+    this.activeWindowRevision += 1;
+    const previous = this.activeWindow;
+    this.activeWindow = next;
+    this.debugInput('hyprland-window-focus', {
+      className: next.class,
+      title: next.title,
+      previousClassName: previous?.class || '',
+      previousTitle: previous?.title || '',
+    });
     if (
-      event.command !== 'start' ||
-      !this.isAuthority ||
-      !window.setStartMenuVisible
-    ) return;
-    const startMenu = document.getElementById('start-menu');
-    if (!startMenu) return;
-    const isVisible = window.getComputedStyle(startMenu).display !== 'none';
-    window.setStartMenuVisible(!isVisible);
+      previous &&
+      previous.class === next.class &&
+      (!previous.title || !next.title || previous.title === next.title)
+    ) {
+      this.debugInput('hyprland-window-focus-ignored', { reason: 'same-window' });
+      return;
+    }
+    if (window.setStartMenuVisible) window.setStartMenuVisible(false, 'hyprland-window-focus');
   },
 
   init() {
@@ -96,15 +163,42 @@ const XPShellSync = {
       if (event.key === 'Escape') this.closeTaskbarGroupMenus();
     });
 
+    document.addEventListener('focusin', event => {
+      if (this.isAuthority) this.debugInput('dom-focusin', { target: this.describeInputTarget(event.target) });
+    });
+    document.addEventListener('focusout', event => {
+      if (this.isAuthority) {
+        this.debugInput('dom-focusout', {
+          target: this.describeInputTarget(event.target),
+          relatedTarget: this.describeInputTarget(event.relatedTarget),
+        });
+      }
+    });
+    document.addEventListener('keydown', event => {
+      if (!this.isAuthority) return;
+      this.debugInput('dom-keydown', {
+        key: event.key,
+        code: event.code,
+        trusted: event.isTrusted,
+        defaultPrevented: event.defaultPrevented,
+        target: this.describeInputTarget(event.target),
+      });
+    }, true);
+
     window.addEventListener('axtmlCommand', (event) => this.handleCommand(event));
 
-    // Clicks on regular Wayland windows never reach any shell surface
-    // (they fall through), so the only signal is the shell's own
-    // hyprlandWindowFocus event: focus left the overlay, close the menu
-    // in every view's copy to keep them consistent.
-    window.addEventListener('hyprlandWindowFocus', () => {
-      if (window.setStartMenuVisible) window.setStartMenuVisible(false);
-    });
+    // Ignore focus notifications when keyboard release reactivates this same window.
+    window.addEventListener('hyprlandWindowFocus', event => this.handleWindowFocus(event));
+    if (this.isAuthority && window.axtml?.call) {
+      const revision = this.activeWindowRevision;
+      window.axtml.call('hyprlandSendCommand', 'j/activewindow').then(activeWindow => {
+        if (this.activeWindowRevision !== revision || !activeWindow?.class) return;
+        this.activeWindow = {
+          class: String(activeWindow.class),
+          title: String(activeWindow.title || ''),
+        };
+      }).catch(() => {});
+    }
     window.addEventListener('axtmlWindowClosed', (event) => {
       this.markNativeWindowClosed(event.id);
       if (this.isAuthority) this.renderTaskbar();
@@ -125,6 +219,15 @@ const XPShellSync = {
     if (window.ResizeObserver) {
       this._ro = new ResizeObserver(() => this.scheduleRescan());
     }
+  },
+
+  describeInputTarget(element) {
+    if (!element) return null;
+    return {
+      tag: String(element.tagName || '').toLowerCase(),
+      id: String(element.id || ''),
+      className: typeof element.className === 'string' ? element.className : '',
+    };
   },
 
   scheduleRescan() {

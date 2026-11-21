@@ -219,37 +219,83 @@ test('XP-managed taskbar windows keep their minimize behavior', () => {
   assert.equal(minimized, 1);
 });
 
-test('axtml start command toggles the menu only in the taskbar authority view', () => {
+test('axtml start clicks the Start button and survives same-window focus', async () => {
   const listeners = new Map();
+  const inputDebug = [];
   let menuOpen = false;
+  let startButtonClicks = 0;
   const window = {
-    axtml: {},
+    axtml: {
+      call(name, ...args) {
+        if (name === '__inputDebug') {
+          inputDebug.push(args[0]);
+          return Promise.resolve(null);
+        }
+        const [command] = args;
+        assert.deepEqual([name, command], ['hyprlandSendCommand', 'j/activewindow']);
+        return Promise.resolve({ class: 'com.mitchellh.ghostty', title: 'terminal' });
+      },
+    },
     addEventListener(type, listener) { listeners.set(type, listener); },
     getComputedStyle() { return { display: menuOpen ? 'flex' : 'none' }; },
     setStartMenuVisible(open) { menuOpen = open; },
+  };
+  const startButton = {
+    click() {
+      startButtonClicks += 1;
+      const isVisible = window.getComputedStyle().display !== 'none';
+      window.setStartMenuVisible(!isVisible);
+    },
   };
   const document = {
     querySelector(selector) {
       if (selector === '.xp-taskbar') return { getClientRects: () => [{}] };
       return null;
     },
-    getElementById(id) { return id === 'start-menu' ? {} : null; },
+    getElementById(id) { return id === 'start-button' ? startButton : null; },
     addEventListener() {},
   };
   const context = vm.createContext({ document, window });
 
   vm.runInContext(readFileSync(require.resolve('../js/shell-sync.js'), 'utf8'), context);
   window.XPShellSync.init();
+  await Promise.resolve();
   const receiveCommand = listeners.get('axtmlCommand');
+  const receiveFocus = listeners.get('hyprlandWindowFocus');
 
   receiveCommand({ command: 'unconfigured' });
   assert.equal(menuOpen, false);
+  assert.equal(startButtonClicks, 0);
   receiveCommand({ command: 'start' });
+  assert.equal(menuOpen, true);
+  receiveFocus({ class: 'com.mitchellh.ghostty', title: 'terminal' });
   assert.equal(menuOpen, true);
   receiveCommand({ command: 'start' });
   assert.equal(menuOpen, false);
+  receiveFocus({ class: 'com.mitchellh.ghostty', title: 'terminal' });
+  assert.equal(menuOpen, false);
+  receiveCommand({ command: 'start' });
+  assert.equal(menuOpen, true);
+  receiveFocus({ class: 'com.mitchellh.ghostty', title: 'terminal' });
+  assert.equal(menuOpen, true);
+
+  assert.deepEqual(
+    inputDebug
+      .filter(record => record.event === 'start-command-received')
+      .map(record => record.commandId),
+    [1, 2, 3],
+  );
+  assert.equal(inputDebug.filter(record => record.event === 'start-click-before').length, 3);
+
+  receiveFocus({ class: 'org.mozilla.firefox', title: 'Browser' });
+  assert.equal(menuOpen, false);
+  receiveCommand({ command: 'start' });
+  receiveFocus({ class: 'org.mozilla.firefox', title: 'Another browser window' });
+  assert.equal(menuOpen, false);
 
   window.XPShellSync.authority = false;
+  menuOpen = true;
   receiveCommand({ command: 'start' });
-  assert.equal(menuOpen, false);
+  assert.equal(menuOpen, true);
+  assert.equal(startButtonClicks, 4);
 });
