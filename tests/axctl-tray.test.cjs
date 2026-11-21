@@ -5,18 +5,27 @@ const vm = require('node:vm');
 
 function setup(savedLayout) {
   const storage = new Map();
+  const contextMenuCalls = [];
   if (savedLayout) storage.set('xp.axctl.tray.layout', JSON.stringify(savedLayout));
   const window = {
     localStorage: {
       getItem(key) { return storage.get(key) || null; },
       setItem(key, value) { storage.set(key, value); },
     },
+    XPContextMenu: {
+      init() { return {}; },
+      open(options) {
+        contextMenuCalls.push(options);
+        return {};
+      },
+      close() {},
+    },
   };
   const context = vm.createContext({ document: {}, window, Map, Set, setTimeout });
   vm.runInContext(readFileSync(require.resolve('../js/axctl-tray.js'), 'utf8'), context);
   const tray = window.XPAxctlTray;
   tray.render = () => {};
-  return { tray, storage, window };
+  return { tray, storage, window, contextMenuCalls };
 }
 
 test('saved hidden icons stay hidden while newly discovered items start visible', () => {
@@ -117,6 +126,93 @@ test('expand button does not open an empty axctl overflow but remains a drag tar
 
   assert.equal(prevented, false);
   assert.equal(stopped, false);
+});
+
+test('tray right-click keeps the native context menu entries', async () => {
+  const { tray, contextMenuCalls } = setup();
+  const requests = [];
+  const trigger = { dataset: { trayId: 'example' } };
+  const item = { id: 'example', menu: true };
+  tray.items = new Map([[item.id, item]]);
+  tray.taskbarRight = { querySelectorAll: () => [trigger] };
+  tray.adapter = {
+    resolveIcon: () => Promise.resolve('icon.png'),
+    request(method, params) {
+      requests.push([method, params]);
+      if (method === 'Tray.Menu') {
+        return Promise.resolve({
+          items: [
+            { id: 7, label: 'Open' },
+            { id: 8, label: 'Preferences' },
+          ],
+        });
+      }
+      return Promise.resolve();
+    },
+  };
+  let prevented = false;
+  let stopped = false;
+
+  tray.handleContextMenu(
+    {
+      clientX: 120,
+      clientY: 80,
+      preventDefault() { prevented = true; },
+      stopPropagation() { stopped = true; },
+    },
+    item.id,
+  );
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(prevented, true);
+  assert.equal(stopped, true);
+  assert.equal(contextMenuCalls.length, 1);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(contextMenuCalls[0].items)),
+    [
+      { id: 7, label: 'Open' },
+      { id: 8, label: 'Preferences' },
+    ],
+  );
+  contextMenuCalls[0].onSelect(contextMenuCalls[0].items[0]);
+  assert.deepEqual(JSON.parse(JSON.stringify(requests)), [
+    ['Tray.Menu', { id: 'example' }],
+    ['Tray.MenuEvent', { id: 'example', menuId: 7, event: 'clicked' }],
+  ]);
+});
+
+test('native tray menus also render through the reusable context menu', async () => {
+  const { tray, contextMenuCalls } = setup();
+  const requests = [];
+  const item = { id: 'example', menu: true };
+  tray.items = new Map([[item.id, item]]);
+  tray.taskbarRight = {
+    querySelectorAll: () => [{ dataset: { trayId: item.id } }],
+  };
+  tray.adapter = {
+    fallbackIcon: 'fallback.png',
+    resolveIcon: () => Promise.resolve('icon.png'),
+    request(method, params) {
+      requests.push([method, params]);
+      if (method === 'Tray.Menu') {
+        return Promise.resolve({ items: [{ id: 7, label: 'Open' }] });
+      }
+      return Promise.resolve();
+    },
+  };
+
+  await tray.openItemMenu(item, 44, 55);
+
+  assert.equal(contextMenuCalls.length, 1);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(contextMenuCalls[0].items)),
+    [{ id: 7, label: 'Open' }],
+  );
+  contextMenuCalls[0].onSelect(contextMenuCalls[0].items[0]);
+  assert.deepEqual(JSON.parse(JSON.stringify(requests)), [
+    ['Tray.Menu', { id: 'example' }],
+    ['Tray.MenuEvent', { id: 'example', menuId: 7, event: 'clicked' }],
+  ]);
 });
 
 test('pointer movement starts a drag and commits its drop target without native drag events', () => {

@@ -8,7 +8,6 @@ const XPAxctlTray = {
   overflowIcons: null,
   visibleIcons: null,
   fixedIcons: null,
-  menuElement: null,
   menuTrigger: null,
   items: new Map(),
   visibleOrder: [],
@@ -48,13 +47,7 @@ const XPAxctlTray = {
     this.readLayout();
     this.taskbarRight.classList.add('axctl-tray-mode');
     this.overflowIcons.replaceChildren();
-    this.menuElement = document.createElement('div');
-    this.menuElement.className = 'tray-context-menu ax-top';
-    this.menuElement.setAttribute('role', 'menu');
-    this.menuElement.hidden = true;
-    document.body.appendChild(this.menuElement);
-    this.menuElement.addEventListener('click', event => event.stopPropagation());
-    this.menuElement.addEventListener('keydown', event => this.handleMenuKeydown(event));
+    window.XPContextMenu?.init();
     document.addEventListener('pointermove', event => this.handlePointerMove(event), true);
     document.addEventListener('pointerup', event => this.handlePointerUp(event), true);
     document.addEventListener('pointercancel', event => this.handlePointerCancel(event), true);
@@ -63,15 +56,6 @@ const XPAxctlTray = {
       event => this.handleExpandButtonClick(event),
       true,
     );
-    document.addEventListener('pointerdown', event => {
-      if (!this.menuElement.contains(event.target) && !event.target.closest?.('.tray-real-icon')) {
-        this.closeMenu();
-      }
-    });
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && !this.menuElement.hidden) this.closeMenu(true);
-    });
-    window.addEventListener('blur', () => this.closeMenu());
     this.updateOverflowWidth();
   },
 
@@ -563,192 +547,31 @@ const XPAxctlTray = {
     this.menuTrigger = Array.from(
       this.taskbarRight.querySelectorAll('.tray-real-icon'),
     ).find(button => button.dataset.trayId === item.id);
-    this.menuElement.replaceChildren();
-    this.renderMenuItems(menu.items, this.menuElement, item.id);
-    this.menuElement.hidden = false;
-    this.menuElement.style.left = `${Math.round(x)}px`;
-    this.menuElement.style.top = `${Math.round(y)}px`;
-    const rect = this.menuElement.getBoundingClientRect();
-    const left = Math.max(4, Math.min(Math.round(x), window.innerWidth - rect.width - 4));
-    const top = Math.max(4, Math.min(Math.round(y), window.innerHeight - rect.height - 4));
-    this.menuElement.style.left = `${left}px`;
-    this.menuElement.style.top = `${top}px`;
-    this.menuElement.querySelector('.xp-context-menu__item:not(:disabled)')?.focus();
-  },
-
-  renderMenuItems(items, container, trayId) {
-    for (const item of items) {
-      if (String(item?.type || '').toLowerCase() === 'separator') {
-        const separator = document.createElement('div');
-        separator.className = 'xp-context-menu__separator';
-        separator.setAttribute('role', 'separator');
-        container.appendChild(separator);
-        continue;
-      }
-      const entry = document.createElement('div');
-      entry.className = 'tray-menu-entry';
-      const button = document.createElement('button');
-      button.className = 'xp-context-menu__item';
-      button.type = 'button';
-      button.disabled = item.enabled === false;
-      const children = Array.isArray(item.children) ? item.children : [];
-      const toggleType = String(item.toggleType || '').toLowerCase();
-      button.setAttribute(
-        'role',
-        toggleType === 'checkmark'
-          ? 'menuitemcheckbox'
-          : toggleType === 'radio'
-            ? 'menuitemradio'
-            : 'menuitem',
-      );
-      if (toggleType === 'checkmark' || toggleType === 'radio') {
-        button.setAttribute('aria-checked', String(Number(item.toggleState) > 0));
-      }
-      const icon = document.createElement('span');
-      icon.className = 'xp-context-menu__icon';
-      if (Number(item.toggleState) > 0 && toggleType) {
-        icon.classList.add('is-check');
-        icon.textContent = toggleType === 'radio' ? '●' : '✓';
-      } else if (item.iconData || item.iconName) {
-        const image = document.createElement('img');
-        image.alt = '';
-        if (String(item.iconData || '').startsWith('data:image/')) {
-          image.src = item.iconData;
-        } else if (item.iconName) {
-          this.adapter.resolveIcon(item.iconName).then(src => {
-            if (image.isConnected) image.src = src;
-          });
-        }
-        icon.appendChild(image);
-      }
-      const label = document.createElement('span');
-      label.className = 'xp-context-menu__label';
-      label.textContent = String(item.label || '');
-      button.append(icon, label);
-      let submenu = null;
-      if (children.length) {
-        button.setAttribute('aria-haspopup', 'menu');
-        button.setAttribute('aria-expanded', 'false');
-        const arrow = document.createElement('span');
-        arrow.className = 'xp-context-menu__arrow';
-        arrow.setAttribute('aria-hidden', 'true');
-        arrow.textContent = '▶';
-        button.appendChild(arrow);
-        submenu = document.createElement('div');
-        submenu.className = 'tray-menu-submenu';
-        submenu.setAttribute('role', 'menu');
-        submenu.hidden = true;
-        this.renderMenuItems(children, submenu, trayId);
-      }
-      button.addEventListener('mouseenter', () => {
-        this.closeSiblingSubmenus(entry);
-        if (submenu) this.openSubmenu(button, submenu);
-      });
-      button.addEventListener('focus', () => {
-        this.closeSiblingSubmenus(entry);
-      });
-      button.addEventListener('click', event => {
-        event.preventDefault();
-        if (children.length) {
-          if (submenu.hidden) this.openSubmenu(button, submenu);
-          else this.closeSubmenu(button, submenu);
-          return;
-        }
+    window.XPContextMenu?.open({
+      x,
+      y,
+      trigger: this.menuTrigger,
+      items: menu.items,
+      resolveIcon: name => this.adapter.resolveIcon(name),
+      onSelect: selectedItem => {
         this.adapter
           .request('Tray.MenuEvent', {
-            id: trayId,
-            menuId: Number(item.id),
+            id: item.id,
+            menuId: Number(selectedItem.id),
             event: 'clicked',
           })
           .catch(() => {});
-        this.closeMenu();
-      });
-      entry.appendChild(button);
-      if (submenu) entry.appendChild(submenu);
-      container.appendChild(entry);
-    }
-  },
-
-  closeSiblingSubmenus(entry) {
-    const parent = entry.parentElement;
-    for (const sibling of parent?.querySelectorAll(':scope > .tray-menu-entry') || []) {
-      if (sibling === entry) continue;
-      const button = sibling.querySelector(':scope > .xp-context-menu__item');
-      const submenu = sibling.querySelector(':scope > .tray-menu-submenu');
-      if (button && submenu) this.closeSubmenu(button, submenu);
-    }
-  },
-
-  openSubmenu(button, submenu) {
-    submenu.hidden = false;
-    button.classList.add('is-submenu-open');
-    button.setAttribute('aria-expanded', 'true');
-    submenu.classList.remove('opens-left', 'opens-up');
-    const rect = submenu.getBoundingClientRect();
-    const parentRect = button.getBoundingClientRect();
-    if (rect.right > window.innerWidth - 4 && parentRect.left - rect.width >= 4) {
-      submenu.classList.add('opens-left');
-    }
-    if (rect.bottom > window.innerHeight - 4 && parentRect.bottom - rect.height >= 4) {
-      submenu.classList.add('opens-up');
-    }
-  },
-
-  closeSubmenu(button, submenu) {
-    submenu.hidden = true;
-    button.classList.remove('is-submenu-open');
-    button.setAttribute('aria-expanded', 'false');
-    for (const childButton of submenu.querySelectorAll('.xp-context-menu__item[aria-expanded="true"]')) {
-      childButton.setAttribute('aria-expanded', 'false');
-      childButton.classList.remove('is-submenu-open');
-    }
-    for (const childMenu of submenu.querySelectorAll('.tray-menu-submenu')) childMenu.hidden = true;
-  },
-
-  handleMenuKeydown(event) {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.closeMenu(true);
-      return;
-    }
-    const menu = event.target.closest?.('[role="menu"]');
-    if (!menu) return;
-    const buttons = Array.from(menu.children)
-      .map(entry => entry.querySelector?.(':scope > .xp-context-menu__item'))
-      .filter(button => button && !button.disabled);
-    const index = buttons.indexOf(event.target.closest('.xp-context-menu__item'));
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      if (!buttons.length) return;
-      const direction = event.key === 'ArrowDown' ? 1 : -1;
-      buttons[(index + direction + buttons.length) % buttons.length].focus();
-    } else if (event.key === 'ArrowRight') {
-      const button = event.target.closest('.xp-context-menu__item');
-      const submenu = button?.parentElement?.querySelector(':scope > .tray-menu-submenu');
-      if (!submenu) return;
-      event.preventDefault();
-      this.openSubmenu(button, submenu);
-      submenu.querySelector('.xp-context-menu__item:not(:disabled)')?.focus();
-    } else if (event.key === 'ArrowLeft' && menu !== this.menuElement) {
-      event.preventDefault();
-      const entry = menu.parentElement;
-      const button = entry?.querySelector(':scope > .xp-context-menu__item');
-      const submenu = entry?.querySelector(':scope > .tray-menu-submenu');
-      if (button && submenu) {
-        this.closeSubmenu(button, submenu);
-        button.focus();
-      }
-    }
+      },
+      onClose: () => {
+        this.menuTrigger = null;
+      },
+    });
   },
 
   closeMenu(restoreFocus = false) {
     this.menuGeneration += 1;
-    if (!this.menuElement) return;
-    this.menuElement.hidden = true;
-    this.menuElement.replaceChildren();
-    const trigger = this.menuTrigger;
+    window.XPContextMenu?.close(restoreFocus);
     this.menuTrigger = null;
-    if (restoreFocus && trigger?.isConnected) trigger.focus();
   },
 };
 

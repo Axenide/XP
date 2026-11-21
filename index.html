@@ -486,6 +486,7 @@
     <script src="js/start-menu-apps.js"></script>
     <script src="js/start-menu-keyboard.js"></script>
     <script src="js/start-menu-profile.js"></script>
+    <script src="js/context-menu.js"></script>
     <script src="js/axctl-tray.js"></script>
     <script src="js/axctl-taskbar.js"></script>
     <script>
@@ -921,6 +922,33 @@
           if (!appItem) return;
           window.XPApps.open(appItem.dataset.app);
           setStartMenu(false);
+        });
+
+        startMenu.addEventListener("contextmenu", (event) => {
+          if (!(event.target instanceof Element)) return;
+          const installedApp = event.target.closest("[data-installed-app-id]");
+          const appItem =
+            installedApp ||
+            event.target.closest(".menu-item[data-app], .program-menu-item[data-app]");
+          if (!appItem) return;
+          event.preventDefault();
+          event.stopPropagation();
+          window.XPContextMenu?.open({
+            x: event.clientX,
+            y: event.clientY,
+            trigger: appItem,
+            items: [{ label: "Open", bold: true }],
+            onSelect: () => {
+              if (installedApp) {
+                window.XPStartMenuApps
+                  ?.launch(installedApp.dataset.installedAppId)
+                  .catch(() => {});
+              } else {
+                window.XPApps.open(appItem.dataset.app);
+              }
+              setStartMenu(false);
+            },
+          });
         });
 
         startMenu.addEventListener("keydown", (event) => {

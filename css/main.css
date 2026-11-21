@@ -1085,12 +1085,12 @@ textarea,
   box-shadow: none;
 }
 
-.tray-context-menu {
+.xp-context-menu {
   position: fixed;
   z-index: 13000;
   display: flex;
   flex-direction: column;
-  min-width: 176px;
+  min-width: 128px;
   max-width: calc(100vw - 8px);
   padding: 2px;
   margin: 0;
@@ -1105,12 +1105,12 @@ textarea,
   -webkit-user-select: none;
 }
 
-.tray-context-menu[hidden],
-.tray-menu-submenu[hidden] {
+.xp-context-menu[hidden],
+.xp-context-menu__submenu[hidden] {
   display: none !important;
 }
 
-.tray-menu-entry {
+.xp-context-menu__entry {
   position: relative;
   min-width: 0;
 }
@@ -1188,6 +1188,10 @@ textarea,
   cursor: default;
 }
 
+.xp-context-menu__item.is-bold {
+  font-weight: 700;
+}
+
 .xp-context-menu__separator {
   height: 1px;
   margin: 3px 2px 3px 26px;
@@ -1195,7 +1199,7 @@ textarea,
   background: #c5c5c5;
 }
 
-.tray-menu-submenu {
+.xp-context-menu__submenu {
   position: absolute;
   top: -3px;
   left: calc(100% - 1px);
@@ -1211,17 +1215,17 @@ textarea,
   color: #000;
 }
 
-.tray-menu-submenu.opens-left {
+.xp-context-menu__submenu.opens-left {
   right: calc(100% - 1px);
   left: auto;
 }
 
-.tray-menu-submenu.opens-up {
+.xp-context-menu__submenu.opens-up {
   top: auto;
   bottom: -3px;
 }
 
-.tray-menu-submenu .xp-context-menu__item {
+.xp-context-menu__submenu .xp-context-menu__item {
   padding-right: 12px;
 }
 
@@ -1666,7 +1670,7 @@ textarea,
   width: 100%;
   height: 25px;
   min-height: 25px;
-  padding: 0 22px 0 10px;
+  padding: 0 7px 0 10px;
   box-shadow: inset 3px 0 #4081ff;
   cursor: var(--xpi-cursor-pointer);
   color: #000;
