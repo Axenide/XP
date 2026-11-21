@@ -393,9 +393,14 @@
 
     <div class="xp-taskbar ax-top" data-ax-exclusive-zone="bottom:30">
       <div class="taskbar-left">
-        <div class="start-button" id="start-button">
-          <img src="assets/windowsIcons/start.png" alt="Start" />
-        </div>
+        <button
+          class="start-button"
+          id="start-button"
+          type="button"
+          aria-label="Start"
+          aria-expanded="false"
+          aria-controls="start-menu"
+        ></button>
         <div class="taskbar-apps" id="taskbar-apps"></div>
       </div>
       <div class="taskbar-right">
@@ -789,6 +794,8 @@
         function setStartMenu(open) {
           startMenu.style.display = open ? "flex" : "none";
           shield.style.display = open ? "block" : "none";
+          startButton.classList.toggle("is-active", open);
+          startButton.setAttribute("aria-expanded", String(open));
           if (open) {
             if (axctlEnabled) {
               startMenu.focus({ preventScroll: true });
